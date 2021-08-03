@@ -165,8 +165,8 @@ int main(int argc, char **argv) {
 		gmtime_s(futctime, &utct);
 		localtime_s(floctime, &utct);
 #else
-		futctime = gmtime(&utct);
-		floctime = localtime(&utct);
+		gmtime_r(&utct, futctime);
+		localtime_r(&utct, floctime);
 #endif
 
 		std::cout << "TIME\tUTC\t" << futctime->tm_hour << ":" << futctime->tm_min << ":" << futctime->tm_sec << std::endl
