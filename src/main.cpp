@@ -88,15 +88,17 @@ void getTLEs(std::string root, std::vector<std::string> urls) {
 	curlpp::Cleanup cleanup;
 	curlpp::Easy request;
 
+	int i = 0;
 	for (std::string& source : urls) {
 		std::ofstream tlef(root + source.substr(source.find_last_of("/\\") + 1), std::ios::binary | std::ios::out);
 
 		try {
-			std::cout << "Get:" << source << std::endl;
+			std::cout << "Get:" << i << " " << source << std::endl;
 			request.setOpt<curlpp::Options::Url>(source);
 			curlpp::options::WriteStream ws(&tlef);
 			request.setOpt(ws);
 			request.perform();
+			i++;
 		}
 		catch (curlpp::RuntimeError e) { std::cout << e.what() << std::endl; }
 		catch (curlpp::LogicError e) { std::cout << e.what() << std::endl; }
@@ -109,10 +111,13 @@ void getTLEs(std::string root, std::vector<std::string> urls) {
 int main(int argc, char **argv) {
 	std::cout << "arftracksat by arf20" << std::endl;
 
+	// check json
 	if (!checkConfig()) exit(1);
 
+	// get tle files from celestrak
 	getTLEs(tleroot, config["tlesources"].get<std::vector<std::string>>());
 
+	// check existance of tle
 	if (!checkTLE()) exit(1);
 
 	// directories
@@ -126,7 +131,7 @@ int main(int argc, char **argv) {
 	show = config["show"].get<std::vector<std::string>>();
 	columns = config["columns"].get<std::vector<std::string>>();
 
-	// station data
+	// set station data
 	sta.name = config["station"]["name"];
 
 	sta.llh.setlat(config["station"]["lat"]);
@@ -139,20 +144,29 @@ int main(int argc, char **argv) {
 	sta.vel.sety(0.0);
 	sta.vel.setz(0.0);
 
-	std::cout << std::setprecision(2) << std::fixed;
+	std::cout << "Setup done, entering loop..." << std::endl;
+	std::this_thread::sleep_for(std::chrono::milliseconds(1000));	// Give user time to read
 
+	std::cout << std::setprecision(2) << std::fixed;	// 2 decimal digit precision
+
+	// time structures
 	tm *futctime = new tm;
 	tm *floctime = new tm;
 
+	// main screen loop
 	while (true) {
+		// clear screen
 #ifdef _WIN32
 		system("cls");
 #else
 		std::cout << "\x1B[2J\x1B[H";
 #endif
+		// now in unix time
 		time_t utct;
+		// propagate orbits for all sats for moment now
 		computeSats(time(&utct));
 
+		// print station data
 		std::cout << "STATION\t\tLAT\tLON\tHGT\t\tX\t\tY\t\tZ" << std::endl;
 		std::cout << sta.name << "\t"; if (sta.name.length() < 8) std::cout << "\t";
 		std::cout << sta.llh.lat() << "\t" << sta.llh.lon() << "\t" << sta.llh.hgt() << "\t\t";
@@ -161,6 +175,7 @@ int main(int argc, char **argv) {
 		std::cout << sta.pos.z() << "\t"; if (sta.pos.z() < 10000.0 && sta.pos.z() > -1000.0) std::cout << "\t";
 		std::cout << std::endl << std::endl;
 
+		// get time structs in UTC and local
 #ifdef _WIN32
 		gmtime_s(futctime, &utct);
 		localtime_s(floctime, &utct);
@@ -169,12 +184,15 @@ int main(int argc, char **argv) {
 		localtime_r(&utct, floctime);
 #endif
 
+		// print time
 		std::cout << "TIME\tUTC\t" << futctime->tm_hour << ":" << futctime->tm_min << ":" << futctime->tm_sec << std::endl
 			<< "\tLOCAL\t" << floctime->tm_hour << ":" << floctime->tm_min << ":" << floctime->tm_sec << std::endl;
 
+		// header lines
 		std::string cl1 = "";
 		std::string cl2 = "";
 
+		// populate header
 		for (std::string& col : columns) {
 			if (col == "name") { cl2 += "NAME\t\t"; cl1 += "\t\t"; }
 			if (col == "azel") { cl2 += "AZ\tEL\t"; cl1 += "\t\t"; }
@@ -186,11 +204,15 @@ int main(int argc, char **argv) {
 			if (col == "tab") { cl2 += "\t"; cl1 += "\t"; }
 		}
 
+		// print header
 		std::cout << cl1 << std::endl << cl2 << std::endl;
 
+		// per sat loop
 		for (sat& sat : sats) {
+			// do only for selected sats (show)
 			if (std::find(show.begin(), show.end(), sat.name) == show.end()) continue;
 
+			// per column
 			for (std::string& col : columns) {
 				if (col == "name") {
 					std::cout << sat.name << "\t";
@@ -222,12 +244,15 @@ int main(int argc, char **argv) {
 				if (col == "tab") std::cout << "\t";
 			}
 
+			// hardcoded doppler print for debug
 			std::cout << "\t" << sat.dopShift << std::endl;
 		}
 
+		// sleep for period
 		std::this_thread::sleep_for(std::chrono::milliseconds(period));
 	}
 
+	// never reached ;)
 	exit(0);
 }
 
