@@ -17,11 +17,14 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Install dependencies
+      run: sudo apt install nlohmann-json3-dev libcurl4-openssl-dev libcurlpp-dev
+
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: cmake -B ${{github.workspace}}/build
+      run: cd src && mkdir build && cd build && cmake ..
 
     - name: Build
       # Build your program with the given configuration
-      run: cmake --build ${{github.workspace}}/build
+      run: cd src/build && make
