@@ -3,6 +3,7 @@
 ## Building
 Install dependencies
 ```
+sudo apt update
 sudo apt install nlohmann-json3-dev libcurl4-openssl-dev libcurlpp-dev
 ```
 Build
