@@ -49,3 +49,6 @@ Currently config.json must be in the current working directory, by default /usr/
 cd /usr/local/etc/arftracksat/
 arftracksat
 ```
+
+# Where Windows?
+Whole source VS project in my personal repos: https://arf20.mooo.com/source/arftracksat
