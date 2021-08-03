@@ -1,0 +1,92 @@
+{
+	"sgp4libroot": "/usr/local/lib/",
+	"licpath": "/usr/local/share/doc/arftracksat/",
+	"tleroot": "/tmp/tle/",
+	"tlefile": "weather.txt",
+	
+	"tlesources": [
+		"http://celestrak.com/NORAD/elements/weather.txt",
+		"http://celestrak.com/NORAD/elements/noaa.txt"
+	],
+	
+	"updatePerdiod": 1000,
+	
+	"station": {
+		"name": "LORCA",
+		"lat": 37.6725,
+		"lon": -1.5863,
+		"hgt": 335.0
+	},
+	
+	"show": [
+		"NOAA 15",
+		"NOAA 18",
+		"NOAA 19",
+		"METEOR-M 2"
+	],
+	
+	"columns": [
+		"name",
+		"azel",
+		"r",
+		"gcd",
+		"llh",
+		"tab",
+		"pos",
+		"vel"
+	],
+	
+	"satidnames": {
+		"70106": "NOAA 1",
+		"72082": "NOAA 2",
+		"73086": "NOAA 3",
+		"74089": "NOAA 4",
+		"76077": "NOAA 5",
+		"78096": "TIROS N",
+		"79057": "NOAA 6",
+		"81059": "NOAA 7",
+		"83022": "NOAA 8",
+		"84123": "NOAA 9",
+		"86073": "NOAA 10",
+		"88089": "NOAA 11",
+		"91032": "NOAA 12",
+		"93050": "NOAA 13",
+		"94089": "NOAA 14",
+		"98030": "NOAA 15",
+		"00055": "NOAA 16",
+		"02032": "NOAA 17",
+		"05018": "NOAA 18",
+		"09005": "NOAA 19",
+		"11061": "SUOMI NPP",
+		"17073": "NOAA 20",
+	
+		"09049": "METEOR-M 1",
+		"14037": "METEOR-M 2",
+		"19038": "METEOR-M 2 2",
+	
+		"06044": "METOP-A",
+		"12049": "METOP-B",
+		"18087": "METOP-C",
+	
+		"15074": "ELEKTRO-L 2",
+	
+		"02040": "METEOSAT-8",
+		"05049": "METEOSAT-9",
+		"12035": "METEOSAT-10",
+		"15034": "METEOSAT-11",
+	
+		"09033": "GOES 14",
+		"10008": "GOES 15",
+		"16071": "GOES 16",
+	
+		"08026": "FENGYUN 3A",
+		"08066": "FENGYUN 2E",
+		"10059": "FENGYUN 3B",
+		"12002": "FENGYUN 2F",
+		"13052": "FENGYUN 3C",
+		"14090": "FENGYUN 2G",
+		"16077": "FENGYUN 4A",
+		"17072": "FENGYUN 3D",
+		"18050": "FENGYUN 2H"
+	}
+}
