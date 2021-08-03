@@ -15,16 +15,12 @@
 
 json config;
 
-constexpr auto confPath = "config.json";
-
-std::vector<std::string> show;
-std::vector<std::string> columns;
-
 std::string tleroot;
 
 station sta;
 
 bool checkConfig() {
+	constexpr auto confPath = "config.json";
 	if (!std::filesystem::exists(confPath)) {
 		std::cout << "No config.json" << std::endl;
 		return false;
@@ -128,6 +124,8 @@ int main(int argc, char **argv) {
 	long period = config["updatePerdiod"];	
 
 	// sat filter and column filter
+	std::vector<std::string> show;
+	std::vector<std::string> columns;
 	show = config["show"].get<std::vector<std::string>>();
 	columns = config["columns"].get<std::vector<std::string>>();
 

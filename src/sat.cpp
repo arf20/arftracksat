@@ -77,8 +77,6 @@ void FreeAstroStdDlls() {
 	FreeSgp4PropDll();
 }
 
-__int64 *pSatKeys;
-
 std::vector<sat> sats;
 
 std::vector<std::pair<std::string, std::string>> idnames;
@@ -131,7 +129,8 @@ void loadSats(std::string spg4libroot, std::string licpath, std::string tlefile)
 
 	std::cout << infoStr << std::endl;
 
-	if (TleLoadFile((char*)(tlefile).c_str())) {	// load TLE
+	auto tlefilecstr = (char*)tlefile.c_str();
+	if (TleLoadFile(tlefilecstr)) {	// load TLE
 		std::cout << "Error opening TLE file" << std::endl;
 		exit(0);
 	}
@@ -139,6 +138,8 @@ void loadSats(std::string spg4libroot, std::string licpath, std::string tlefile)
 		std::cout << "Error opening TLE file" << std::endl;
 		exit(0);
 	}*/
+
+	__int64 *pSatKeys;
 
 	int numSats = TleGetCount();
 	pSatKeys = (__int64*)malloc(numSats * sizeof(__int64));	// array with sat keys
