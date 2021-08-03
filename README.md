@@ -9,7 +9,7 @@ sudo apt install nlohmann-json3-dev libcurl4-openssl-dev libcurlpp-dev
 Build
 ```
 git clone https://github.com/arf20/arftracksat
-cd src
+cd arftracksat/src
 mkdir build
 cd build
 cmake ..
