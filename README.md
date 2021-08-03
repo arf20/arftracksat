@@ -15,7 +15,9 @@ cd build
 cmake ..
 make
 sudo make install
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 ```
+You may add the last line to .bashrc to make it persistant. It makes linux search in /usr/local/lib for libraries
 
 ## Configuring
 The default config.json should work out of the box
