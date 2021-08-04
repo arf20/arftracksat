@@ -18,7 +18,7 @@ mkdir arftracksat_$ver/DEBIAN/
 # create debian thing
 rm arftracksat_$ver/DEBIAN/control
 touch arftracksat_$ver/DEBIAN/control
-echo 'Package: helloworld' >> arftracksat_$ver/DEBIAN/control
+echo 'Package: arftracksat' >> arftracksat_$ver/DEBIAN/control
 echo 'Version: '$ver >> arftracksat_$ver/DEBIAN/control
 echo 'Section: base' >> arftracksat_$ver/DEBIAN/control
 echo 'Priority: optional' >> arftracksat_$ver/DEBIAN/control
