@@ -20,7 +20,11 @@ std::string tleroot;
 station sta;
 
 bool checkConfig() {
+#ifdef _WIN32
 	constexpr auto confPath = "config.json";
+#else
+	constexpr auto confPath = "/usr/local/etc/arftracksat/config.json";
+#endif
 	if (!std::filesystem::exists(confPath)) {
 		std::cout << "No config.json" << std::endl;
 		return false;
