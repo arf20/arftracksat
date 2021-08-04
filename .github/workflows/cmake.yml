@@ -28,3 +28,6 @@ jobs:
     - name: Build
       # Build your program with the given configuration
       run: cd src/build && make
+      
+    - name: Make deb package
+      run: ./makedeb.sh 0.9-1
