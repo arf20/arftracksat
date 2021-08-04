@@ -30,4 +30,4 @@ jobs:
       run: cd src/build && make
       
     - name: Make deb package
-      run: ./makedeb.sh 0.9-1
+      run: chmod +x makedeb.sh && ./makedeb.sh 0.9-1
