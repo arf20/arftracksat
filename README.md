@@ -52,3 +52,6 @@ arftracksat
 
 # Where Windows?
 Whole source VS project in my personal repos: https://arf20.mooo.com/source/arftracksat
+
+# Support
+https://discord.gg/GpgrnDQqtr
