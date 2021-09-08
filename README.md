@@ -51,7 +51,7 @@ arftracksat
 ```
 
 # Where Windows?
-Whole source VS project in my personal repos: https://arf20.mooo.com/source/arftracksat
+Whole source VS project in my personal repos: https://arf20.com/source/arftracksat
 
 # Support
 https://discord.gg/GpgrnDQqtr
