@@ -1,6 +1,4 @@
 {
-	"sgp4libroot": "/usr/local/lib/",
-	"licpath": "/usr/local/share/doc/arftracksat/",
 	"tleroot": "/tmp/tle/",
 	"tlefile": "weather.txt",
 	
@@ -28,9 +26,8 @@
 	"columns": [
 		"name",
 		"azel",
-		"r",
-		"gcd",
-		"llh",
+		"dis",
+		"geo",
 		"tab",
 		"pos",
 		"vel"

@@ -1,4 +1,5 @@
 # arftracksat: A CLI satellite tracking software for linux
+SGDP4 adaptation shamelessly copied from BatchDrake's suscan.
 
 ## Building
 Install dependencies
@@ -37,7 +38,7 @@ station:        Station data
   hgt:            Altitude (height) over sea level in meters
 show:           Array to show sats by name
 columns:        Sat data to show in columns in order
-                name, azel, r, gcd, llh, tab, pos, vel
+                name, azel, dis, geo, tab, pos, vel
 satidnames:     A table to convert from 5 digit International Designators to human readable common name
                 You may need to add entries for new TLEs and sats, or else they will show as unknown
                 The SGP4 library that reads TLEs, ignores the title line in the TLE
@@ -51,7 +52,8 @@ arftracksat
 ```
 
 # Where Windows?
-Whole source VS project in my personal repos: https://arf20.com/source/arftracksat
+I just broke support lol
+Old VS project in my personal repos: https://arf20.com/source/arftracksat (it sucks)
 
 # Support
 https://discord.gg/GpgrnDQqtr

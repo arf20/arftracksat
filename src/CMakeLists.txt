@@ -1,25 +1,25 @@
-cmake_minimum_required(VERSION 3.13)
-project(arftracksat)
+cmake_minimum_required(VERSION 3.0.0)
+#project(arftracksat)
 set(CMAKE_CXX_STANDARD 17)
 
-include_directories(sgp4/ sgp4/sgp4/services sgp4/sgp4/wrappers)
-file(GLOB SGP4_SRC sgp4/sgp4/services/*.c sgp4/sgp4/wrappers/*.c)
-file(GLOB SGP4_LIB sgp4/lib/*.so)
-file(GLOB SGP4_LIB_5 sgp4/lib/*.5)
-file(GLOB SGP4_LIC sgp4/lib/SGP4_Open_License.txt)
-file(GLOB CONFJSON ../config.json)
+include_directories(sgdp4/)
+set(SGPD4_SRC
+    "sgdp4/sigutils/util.c"
+    "sgdp4/sigutils/log.c"
+    "sgdp4/sgdp4.c"
+    "sgdp4/tle.c"
+    "sgdp4/predict.c"
+    "sgdp4/deep.c"
+    "sgdp4/coord.c")
 
-#message(STATUS "${SGP4_SRC}")
+set(CONFJSON ../config.json)
 
-set(SOURCE_FILES main.cpp sat.cpp ${SGP4_SRC})
+set(SOURCE_FILES ${SGPD4_SRC} sat.cpp main.cpp)
 set(CMAKE_DEFAULT_PROJECT_FILE main.cpp)
 
-add_executable(arftracksat ${SOURCE_FILES} ${SGP4_SRC})
+add_executable(arftracksat ${SOURCE_FILES})
 
-target_link_libraries(arftracksat curl curlpp dl ${SGP4_LIB} ${SGP4_LIB_5})
+target_link_libraries(arftracksat curl curlpp dl)
 
 install(TARGETS arftracksat RUNTIME DESTINATION bin)
-install(FILES ${SGP4_LIB} ${SGP4_LIB_5} DESTINATION lib)
-#install(FILES ${SGP4_LIB} ${SGP4_LIB_5} DESTINATION /etc/arftracksat/sgp4lib/)
-install(FILES ${SGP4_LIC} DESTINATION share/doc/arftracksat/)
 install(FILES ${CONFJSON} DESTINATION etc/arftracksat/)

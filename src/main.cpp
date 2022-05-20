@@ -39,14 +39,6 @@ bool checkConfig() {
 		return false;
 	}
 
-	if (!config.contains("sgp4libroot")) { std::cout << "sgp4libroot not defined in config" << std::endl; return false; }
-	if (config["sgp4libroot"].type() != json::value_t::string) { std::cout << "sgp4libroot is not a string" << std::endl; return false; }
-	if (!std::filesystem::exists(std::string(config["sgp4libroot"]))) { std::cout << "sgp4libroot is not a valid path" << std::endl; return false; }
-
-	if (!config.contains("licpath")) { std::cout << "licpath not defined in config" << std::endl; return false; }
-	if (config["licpath"].type() != json::value_t::string) { std::cout << "licpath is not a string" << std::endl; return false; }
-	if (!std::filesystem::exists(std::string(config["licpath"]))) { std::cout << "licpath is not a valid path" << std::endl; return false; }
-
 	if (!config.contains("tleroot")) { std::cout << "tleroot not defined in config" << std::endl; return false; }
 	if (config["tleroot"].type() != json::value_t::string) { std::cout << "tleroot is not a string" << std::endl; return false; }
 	tleroot = config["tleroot"];
@@ -122,7 +114,7 @@ int main(int argc, char **argv) {
 
 	// directories
 	std::string tlefn = tleroot + std::string(config["tlefile"]);
-	loadSats(config["sgp4libroot"], config["licpath"], tlefn);
+	loadSats(tlefn);
 
 	// update period
 	long period = config["updatePerdiod"];	
@@ -136,20 +128,20 @@ int main(int argc, char **argv) {
 	// set station data
 	sta.name = config["station"]["name"];
 
-	sta.llh.setlat(config["station"]["lat"]);
-	sta.llh.setlon(config["station"]["lon"]);
-	sta.llh.sethgt(config["station"]["hgt"]);
+	sta.geo.lat = config["station"]["lat"];
+	sta.geo.lon = config["station"]["lon"];
+	sta.geo.height = config["station"]["hgt"];
 
-	sta.pos = llhToECEF(sta.llh);
+	sta.pos = geoToECEF(sta.geo);
 
-	sta.vel.setx(0.0);
-	sta.vel.sety(0.0);
-	sta.vel.setz(0.0);
+	sta.vel.x = 0.0;
+	sta.vel.y = 0.0;
+	sta.vel.z = 0.0;
 
 	std::cout << "Setup done, entering loop..." << std::endl;
 	std::this_thread::sleep_for(std::chrono::milliseconds(1000));	// Give user time to read
 
-	std::cout << std::setprecision(2) << std::fixed;	// 2 decimal digit precision
+	std::cout << std::setprecision(1) << std::fixed;	// 2 decimal digit precision
 
 	// time structures
 	tm *futctime = new tm;
@@ -171,10 +163,10 @@ int main(int argc, char **argv) {
 		// print station data
 		std::cout << "STATION\t\tLAT\tLON\tHGT\t\tX\t\tY\t\tZ" << std::endl;
 		std::cout << sta.name << "\t"; if (sta.name.length() < 8) std::cout << "\t";
-		std::cout << sta.llh.lat() << "\t" << sta.llh.lon() << "\t" << sta.llh.hgt() << "\t\t";
-		std::cout << sta.pos.x() << "\t"; if (sta.pos.x() < 10000.0 && sta.pos.x() > -1000.0) std::cout << "\t";
-		std::cout << sta.pos.y() << "\t"; if (sta.pos.y() < 10000.0 && sta.pos.y() > -1000.0) std::cout << "\t";
-		std::cout << sta.pos.z() << "\t"; if (sta.pos.z() < 10000.0 && sta.pos.z() > -1000.0) std::cout << "\t";
+		std::cout << sta.geo.lat << "\t" << sta.geo.lon << "\t" << sta.geo.height << "\t\t";
+		std::cout << sta.pos.x << "\t"; if (sta.pos.x < 10000.0 && sta.pos.x > -1000.0) std::cout << "\t";
+		std::cout << sta.pos.y << "\t"; if (sta.pos.y < 10000.0 && sta.pos.y > -1000.0) std::cout << "\t";
+		std::cout << sta.pos.z << "\t"; if (sta.pos.z < 10000.0 && sta.pos.z > -1000.0) std::cout << "\t";
 		std::cout << std::endl << std::endl;
 
 		// get time structs in UTC and local
@@ -198,10 +190,9 @@ int main(int argc, char **argv) {
 		for (std::string& col : columns) {
 			if (col == "name") { cl2 += "NAME\t\t"; cl1 += "\t\t"; }
 			if (col == "azel") { cl2 += "AZ\tEL\t"; cl1 += "\t\t"; }
-			if (col == "r") { cl2 += "R\t\t"; cl1 += "\t\t"; }
-			if (col == "gcd") { cl2 += "GCD\t\t"; cl1 += "\t\t"; }
-			if (col == "llh") { cl2 += "LAT\tLON\tHGT\t"; cl1 += "\t\t\t"; }
-			if (col == "pos") { cl2 += "X\t\tY\t\tZ\t\t"; cl1 += "POS\t\t\t\t\t\t"; }
+			if (col == "dis") { cl2 += "DIS\t"; cl1 += "\t"; }
+			if (col == "geo") { cl2 += "LAT\tLON\tHGT\t"; cl1 += "\t\t\t"; }
+			if (col == "pos") { cl2 += "X\tY\tZ\t"; cl1 += "POS\t\t\t"; }
 			if (col == "vel") { cl2 += "X\tY\tZ\t"; cl1 += "VEL\t\t\t"; }
 			if (col == "tab") { cl2 += "\t"; cl1 += "\t"; }
 		}
@@ -220,28 +211,24 @@ int main(int argc, char **argv) {
 					std::cout << sat.name << "\t";
 					if (sat.name.length() < 8) std::cout << "\t";
 				}
-				if (col == "azel") std::cout << sat.aerd.az << "\t" << sat.aerd.el << "\t";
-				if (col == "r") {
-					std::cout << sat.aerd.r << "\t";
-					if (sat.aerd.r < 10000.0) std::cout << "\t";
+				if (col == "azel") std::cout << sat.aer.azimuth << "\t" << sat.aer.elevation << "\t";
+				if (col == "dis") {
+					std::cout << sat.aer.distance << "\t";
+					//if (sat.aer.distance < 10000.0) std::cout << "\t";
 				}
-				if (col == "gcd") {
-					std::cout << sat.aerd.gcd << "\t";
-					if (sat.aerd.gcd < 10000.0) std::cout << "\t";
-				}
-				if (col == "llh") std::cout << sat.llh.lat() << "\t" << sat.llh.lon() << "\t" << sat.llh.hgt() << "\t";
+				if (col == "geo") std::cout << sat.geo.lat << "\t" << sat.geo.lon << "\t" << sat.geo.height << "\t";
 				if (col == "pos") {
-					std::cout << sat.pos.x() << "\t";
-					if (sat.pos.x() < 10000.0 && sat.pos.x() > -1000.0) std::cout << "\t";
-					std::cout << sat.pos.y() << "\t";
-					if (sat.pos.y() < 10000.0 && sat.pos.y() > -1000.0) std::cout << "\t";
-					std::cout << sat.pos.z() << "\t";
-					if (sat.pos.z() < 10000.0 && sat.pos.z() > -1000.0) std::cout << "\t";
+					std::cout << sat.pos.x << "\t";
+					//if (sat.pos.x < 10000.0 && sat.pos.x > -1000.0) std::cout << "\t";
+					std::cout << sat.pos.y << "\t";
+					//if (sat.pos.y < 10000.0 && sat.pos.y > -1000.0) std::cout << "\t";
+					std::cout << sat.pos.z << "\t";
+					//if (sat.pos.z < 10000.0 && sat.pos.z > -1000.0) std::cout << "\t";
 				}
 				if (col == "vel") {
-					std::cout << sat.vel.x() << "\t";
-					std::cout << sat.vel.y() << "\t";
-					std::cout << sat.vel.z() << "\t";
+					std::cout << sat.vel.x << "\t";
+					std::cout << sat.vel.y << "\t";
+					std::cout << sat.vel.z << "\t";
 				}
 				if (col == "tab") std::cout << "\t";
 			}

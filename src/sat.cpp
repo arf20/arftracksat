@@ -1,252 +1,139 @@
 #include "main.h"
 
-extern "C" {
-#include <sgp4/services/DllMainDll_Service.h>
-#include <sgp4/services/TimeFuncDll_Service.h>
-#include <sgp4/wrappers/DllMainDll.h>
-#include <sgp4/wrappers/EnvConstDll.h>
-#include <sgp4/wrappers/AstroFuncDll.h>
-#include <sgp4/wrappers/TimeFuncDll.h>
-#include <sgp4/wrappers/TleDll.h>
-#include <sgp4/wrappers/Sgp4PropDll.h>
-}
+#include "sgdp4/sgdp4.h"
 
 #include <ctime>
+#include <string>
 #include <iostream>
+#include <fstream>
 
-// Load all the dlls being used in the program
-void LoadAstroStdDlls(const char* libPath) {
-	// Load MainDll dll
-	LoadDllMainDll(libPath);
-	// Load EnvConst dll and assign function pointers
-	LoadEnvConstDll(libPath);
-	// Load TimeFunc dll and assign function pointers
-	LoadTimeFuncDll(libPath);
-	// Load AstroFunc dll and assign function pointers
-	LoadAstroFuncDll(libPath);
-	// Load Tle dll and assign function pointers
-	LoadTleDll(libPath);
-	// Load Sgp4Prop dll and assign function pointers
-	LoadSgp4PropDll(libPath);
-}
-
-
-// Initialize all the dlls being used in the program
-void InitAstroStdDlls() {
-	fAddr apPtr;
-	int errCode;
-
-	// Get pointer to the global data (data pointers, function pointers, ...) that's being used among the dlls in the program
-	apPtr = DllMainInit();
-
-	errCode = EnvInit(apPtr);
-	if (errCode != 0)
-		ShowMsgAndTerminate();
-
-	errCode = TimeFuncInit(apPtr);
-	if (errCode != 0)
-		ShowMsgAndTerminate();
-
-	errCode = AstroFuncInit(apPtr);
-	if (errCode != 0)
-		ShowMsgAndTerminate();
-
-	errCode = TleInit(apPtr);
-	if (errCode != 0)
-		ShowMsgAndTerminate();
-
-	errCode = Sgp4Init(apPtr);
-	if (errCode != 0)
-		ShowMsgAndTerminate();
-}
-
-
-// Free all the dlls being used in the program
-void FreeAstroStdDlls() {
-	// Free MainDll dll
-	FreeDllMainDll();
-	// Free EnvConst dll
-	FreeEnvConstDll();
-	// Free AstroFunc dll
-	FreeAstroFuncDll();
-	// Free TimeFunc dll
-	FreeTimeFuncDll();
-	// Free Tle dll
-	FreeTleDll();
-	// Free Sgp4Prop dll
-	FreeSgp4PropDll();
-}
+#define TORAD	PI/180.0
+#define TODEG	180.0/PI
 
 std::vector<sat> sats;
 
-std::vector<std::pair<std::string, std::string>> idnames;
-
-void loadSatIdNames() {
-	for (sat& sat : sats) {
-		//if (!config.contains(sat.id)) continue;
-		try {
-			idnames.push_back({ sat.id, config["satidnames"][sat.id] });
-		}
-		catch (nlohmann::json::exception e) {
-			std::cout << "Warning: No name for ID " << sat.id << std::endl;
-		}
-	}
-}
-
-std::string id2name(std::string id) {
-	for (std::pair<std::string, std::string>& pair : idnames) {
-		if (pair.first == id) return pair.second;
-	}
-	return "Unknown";
-}
-
 // geodetic to ECEF
-vector llhToECEF(latlonhgt llh) {
+xyz_t geoToECEF(xyz_t geo) {
 	double e2 = 1 - (pow(POR, 2) / pow(EQR, 2));
-	//double N = pow(EQR, 2) / sqrt((pow(EQR, 2) * pow(cos(llh.lat()), 2)) + (pow(POR, 2) * pow(sin(llh.lat()), 2)));
-	double N = EQR / sqrt(1 - (e2 * pow(sin(llh.lat()), 2)));
+	double N = EQR / sqrt(1 - (e2 * pow(sin(geo.lat), 2)));
 
-	vector v;
-	v.setx((N + llh.hgt()) * cos(TORAD * llh.lat()) * cos(TORAD * llh.lon()));					// X
-	v.sety((N + llh.hgt()) * cos(TORAD * llh.lat()) * sin(TORAD * llh.lon()));					// Y
-	//v.setz((((pow(POR, 2) / pow(EQR, 2)) * N) + llh.hgt()) * sin(TORAD *llh.lat()));			// Z
-	v.setz((((1 - e2) * N) + llh.hgt()) * sin(TORAD * llh.lat()));								// Z
+	xyz_t v;
+	v.x = (N + geo.height) * cos(TORAD * geo.lat) * cos(TORAD * geo.lon);						// X
+	v.y = (N + geo.height) * cos(TORAD * geo.lat) * sin(TORAD * geo.lon);						// Y
+	v.z = (((1 - e2) * N) + geo.height) * sin(TORAD * geo.lat);									// Z
 	return v;
 }
 
-void loadSats(std::string spg4libroot, std::string licpath, std::string tlefile) {
-	// Load DLLs
-	LoadAstroStdDlls(spg4libroot.c_str());
-	// Check license
-	Sgp4SetLicFilePath((char*)licpath.c_str());
-	// Init DLLs
-	InitAstroStdDlls();
+inline xyz_t georadtodeg(xyz_t geo) {
+	return xyz_t{TODEG * geo.x, TODEG * geo.y, geo.z};
+}
 
-	// Get DLL info
-	char infoStr[128];
-	Sgp4GetInfo(infoStr);
-	infoStr[INFOSTRLEN - 1] = 0;					// Insert NUL
+inline xyz_t geodegtorad(xyz_t geo) {
+	return xyz_t{TORAD * geo.x, TORAD * geo.y, geo.z};
+}
 
-	std::cout << infoStr << std::endl;
-
-	auto tlefilecstr = (char*)tlefile.c_str();
-	if (TleLoadFile(tlefilecstr)) {	// load TLE
+void loadSats(std::string tlefile) {
+	std::ifstream file(tlefile, std::ios::binary | std::ios::ate);
+	if (file.bad()) {
 		std::cout << "Error opening TLE file" << std::endl;
-		exit(0);
-	}
-	/*if (TConLoadFile((char*)tlefn.c_str())) {		// load TLE 2 (6P card)
-		std::cout << "Error opening TLE file" << std::endl;
-		exit(0);
-	}*/
-
-	__int64 *pSatKeys;
-
-	int numSats = TleGetCount();
-	pSatKeys = (__int64*)malloc(numSats * sizeof(__int64));	// array with sat keys
-	TleGetLoaded(2, pSatKeys);						// load sat keys
-
-	//std::cout << "Satellites:" << std::endl;
-
-	for (int i = 0; i < numSats; i++) {
-		sat s;
-
-		if (Sgp4InitSat(pSatKeys[i]) != 0)
-			ShowMsgAndTerminate();
-
-		char satName[512];
-		memset(satName, 0, GETSETSTRLEN);
-		TleGetField(pSatKeys[i], XF_TLE_SATNAME, satName);
-		int j = GETSETSTRLEN - 1;
-		while (satName[j] == ' ') {
-			j--;
-		}
-		satName[j] = 0;
-		s.id = std::string(satName);
-		s.key = pSatKeys[i];
-
-		sats.push_back(s);
-
-		//std::cout << "\t" + s.name << std::endl;
 	}
 
-	loadSatIdNames();
+	size_t size = file.tellg();
+	file.seekg(0, std::ios::beg);
 
-	for (sat& sat : sats) {
-		sat.name = id2name(sat.id);
+	char *buff = (char*)malloc(size);
+	file.read(buff, size);
+
+	orbit_t orbit;
+	sat sat;
+	while (true) {
+		size_t consumed = orbit_init_from_data(&orbit, buff, size);
+		if (consumed == 0) break;
+
+		sat.name = std::string(orbit.name);
+		sat.norad = orbit.satno;
+		sat.orbit = orbit;
+
+		std::cout << consumed << std::endl;
+
+		buff += consumed;
+
+		sats.push_back(sat);
 	}
 
 	std::cout << "Satellites loaded" << std::endl;
 }
 
 void computeSats(time_t t) {
-	double d50 = (t / (60.0 * 60.0 * 24.0)) + 7306.0;	// days since 1950 UTC
-	//std::cout << "Days since 1950: " << d50 << std::endl << std::endl;
-
 	for (sat& sat : sats) {
 		double mse;
-		int errCode = Sgp4PropDs50UTC(sat.key, d50, &mse, sat.pos.v, sat.vel.v, sat.llh.v);	// propagate
+		// init
+		sgdp4_prediction_t pred;
+		xyz_t stageo = geodegtorad(sta.geo);
+		sgdp4_prediction_init(&pred, &sat.orbit, &stageo);
 
-		while (sat.llh.lon() < -180.0)
-			sat.llh.setlon(sat.llh.lon() + 360.0);
+		// propagate
+		timeval tv;
+		tv.tv_sec = t; tv.tv_usec = 0;
+		sgdp4_prediction_update(&pred, &tv);
 
-		while (sat.llh.lon() > (180.0))
-			sat.llh.setlon(sat.llh.lon() - 360.0);
+		// get stuff
+		sgdp4_prediction_get_ecef(&pred, &sat.pos);
+		sgdp4_prediction_get_vel_ecef(&pred, &sat.vel);
+		sgdp4_prediction_get_azel(&pred, &sat.aer);
+		xyz_ecef_to_geodetic(&sat.pos, &sat.geo);
+		sat.geo = georadtodeg(sat.geo);
 
-		if (errCode != 0) {
-			char errMsg[128];
-			GetLastErrMsg(errMsg);
-			errMsg[LOGMSGLEN - 1] = 0;
+		while (sat.geo.lon < -180.0)
+			sat.geo.lon = sat.geo.lon + 360.0;
 
-			// Display error message to screen
-			printf("%s\n", errMsg);
-
-			continue; // Move to the next satellite
-		}
+		while (sat.geo.lon > (180.0))
+			sat.geo.lon = sat.geo.lon - 360.0;
 
 		// == AZ ==
 		// Difference in coords
-		double deltaLat = sat.llh.lat() - sta.llh.lat();
-		double deltaLon = sat.llh.lon() - sta.llh.lon();
+		double deltaLat = sat.geo.lat - sta.geo.lat;
+		double deltaLon = sat.geo.lon - sta.geo.lon;
 
 		// Formulae for azimuth
-		sat.aerd.az = TODEG * atan2(
-			sin(TORAD * deltaLon) * cos(TORAD * sat.llh.lat()),
-			(cos(TORAD * sta.llh.lat()) * sin(TORAD * sat.llh.lat()) - (sin(TORAD * sta.llh.lat()) * cos(TORAD * sat.llh.lat()) * cos(TORAD * deltaLon)))
+		sat.aer.azimuth = TODEG * atan2(
+			sin(TORAD * deltaLon) * cos(TORAD * sat.geo.lat),
+			(cos(TORAD * sta.geo.lat) * sin(TORAD * sat.geo.lat) - (sin(TORAD * sta.geo.lat) * cos(TORAD * sat.geo.lat) * cos(TORAD * deltaLon)))
 		);
 
 		// Correct negative azimuths
-		while (sat.aerd.az < 0.0)
-			sat.aerd.az += 360.0;
+		while (sat.aer.azimuth < 0.0)
+			sat.aer.azimuth += 360.0;
 
 
 		// == EL ==
 		// Haversine formulae
 		double h = pow(sin((TORAD * deltaLat) / 2.0), 2)
-			+ (cos(TORAD * sta.llh.lat()) * cos(TORAD * sat.llh.lat()) * pow(sin((TORAD * deltaLon) / 2.0), 2));	// haversine of theta
+			+ (cos(TORAD * sta.geo.lat) * cos(TORAD * sat.geo.lat) * pow(sin((TORAD * deltaLon) / 2.0), 2));	// haversine of theta
 		double theta = 2.0 * atan2(sqrt(h), sqrt(1.0 - h));															// arc angle between 2 coords (rad)
 		double gcd = EARTHR * theta;																				// arc length
 
 		// Triangle:  earth center (C), observer (O) and satellite (S)
-		double oRLen = EARTHR + sta.llh.hgt();																		// CO length
-		double sRLen = EARTHR + sat.llh.hgt();																		// CS length
+		double oRLen = EARTHR + sta.geo.height;																		// CO length
+		double sRLen = EARTHR + sat.geo.height;																		// CS length
 			
 		double osLen = sqrt(pow(oRLen, 2) + pow(sRLen, 2) - (2 * oRLen * sRLen * cos(theta)));						// OS length (missing side)
 
 		// Find CO OS angle
 		double phi = asin((sRLen * sin(theta)) / osLen);
 
-		// Elevation is that angle minus 90º
-		sat.aerd.el = (TODEG * phi) - 90;
+		// Elevation is that angle minus 90ï¿½
+		sat.aer.elevation = (TODEG * phi) - 90;
 
 
 
 		// Radius (range) to sat
-		sat.aerd.r = osLen;
+		sat.aer.distance = osLen;
 		// Great circle distance
-		sat.aerd.gcd = gcd;
+		//sat.aer.gcd = gcd;
 
 
-		sat.rVel = (sat.vel - sta.vel).dot((sat.pos - sta.pos) / (sat.pos - sta.pos).mod());
+		sat.rVel = xyzdot(sat.vel - sta.vel, xyzunit(sat.pos - sta.pos));
 		sat.dopShift = (sat.rVel / LIGHTC) * 137500000.0;
 	}
 }
