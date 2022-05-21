@@ -35,7 +35,7 @@ jobs:
         make -j4
       
     - name: Make deb package
-      run: 
+      run: |
         chmod +x makedeb.sh
         ./makedeb.sh 0.9-1
       
