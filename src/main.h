@@ -70,4 +70,3 @@ extern station sta;
 extern std::vector<sat> sats;
 void loadSats(std::string tlefile);
 void computeSats(time_t t);
-xyz_t geoToECEF(xyz_t geo);

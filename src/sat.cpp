@@ -12,18 +12,6 @@
 
 std::vector<sat> sats;
 
-// geodetic to ECEF
-xyz_t geoToECEF(xyz_t geo) {
-	double e2 = 1 - (pow(POR, 2) / pow(EQR, 2));
-	double N = EQR / sqrt(1 - (e2 * pow(sin(geo.lat), 2)));
-
-	xyz_t v;
-	v.x = (N + geo.height) * cos(TORAD * geo.lat) * cos(TORAD * geo.lon);						// X
-	v.y = (N + geo.height) * cos(TORAD * geo.lat) * sin(TORAD * geo.lon);						// Y
-	v.z = (((1 - e2) * N) + geo.height) * sin(TORAD * geo.lat);									// Z
-	return v;
-}
-
 inline xyz_t georadtodeg(xyz_t geo) {
 	return xyz_t{TODEG * geo.x, TODEG * geo.y, geo.z};
 }
@@ -48,13 +36,11 @@ void loadSats(std::string tlefile) {
 	sat sat;
 	while (true) {
 		size_t consumed = orbit_init_from_data(&orbit, buff, size);
-		if (consumed == 0) break;
+		if (consumed == 0 || consumed > size) break;
 
 		sat.name = std::string(orbit.name);
 		sat.norad = orbit.satno;
 		sat.orbit = orbit;
-
-		std::cout << consumed << std::endl;
 
 		buff += consumed;
 

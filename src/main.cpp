@@ -49,9 +49,6 @@ bool checkConfig() {
 
 	if (!config.contains("updatePerdiod")) { std::cout << "updatePerdiod not defined in config" << std::endl; return false; }
 	if (config["updatePerdiod"].type() != json::value_t::number_unsigned) { std::cout << "updatePerdiod is not a unsigned number" << std::endl; return false; }
-	
-	if (!config.contains("satidnames")) { std::cout << "satidnames not defined in config" << std::endl; return false; }
-	if (config["satidnames"].type() != json::value_t::object) { std::cout << "satidnames is not a object" << std::endl; return false; }
 
 	if (!config.contains("station")) { std::cout << "station not defined in config" << std::endl; return false; }
 	if (config["station"].type() != json::value_t::object) { std::cout << "station is not a object" << std::endl; return false; }
@@ -132,7 +129,7 @@ int main(int argc, char **argv) {
 	sta.geo.lon = config["station"]["lon"];
 	sta.geo.height = config["station"]["hgt"];
 
-	sta.pos = geoToECEF(sta.geo);
+	xyz_geodetic_to_ecef(&sta.geo, &sta.pos);
 
 	sta.vel.x = 0.0;
 	sta.vel.y = 0.0;
@@ -161,13 +158,10 @@ int main(int argc, char **argv) {
 		computeSats(time(&utct));
 
 		// print station data
-		std::cout << "STATION\t\tLAT\tLON\tHGT\t\tX\t\tY\t\tZ" << std::endl;
+		std::cout << "STATION\t\tLAT\tLON\tHGT\t\tX\tY\tZ" << std::endl;
 		std::cout << sta.name << "\t"; if (sta.name.length() < 8) std::cout << "\t";
 		std::cout << sta.geo.lat << "\t" << sta.geo.lon << "\t" << sta.geo.height << "\t\t";
-		std::cout << sta.pos.x << "\t"; if (sta.pos.x < 10000.0 && sta.pos.x > -1000.0) std::cout << "\t";
-		std::cout << sta.pos.y << "\t"; if (sta.pos.y < 10000.0 && sta.pos.y > -1000.0) std::cout << "\t";
-		std::cout << sta.pos.z << "\t"; if (sta.pos.z < 10000.0 && sta.pos.z > -1000.0) std::cout << "\t";
-		std::cout << std::endl << std::endl;
+		std::cout << sta.pos.x << "\t" << sta.pos.y << "\t" << sta.pos.z << "\t" << std::endl << std::endl;
 
 		// get time structs in UTC and local
 #ifdef _WIN32
@@ -214,16 +208,12 @@ int main(int argc, char **argv) {
 				if (col == "azel") std::cout << sat.aer.azimuth << "\t" << sat.aer.elevation << "\t";
 				if (col == "dis") {
 					std::cout << sat.aer.distance << "\t";
-					//if (sat.aer.distance < 10000.0) std::cout << "\t";
 				}
 				if (col == "geo") std::cout << sat.geo.lat << "\t" << sat.geo.lon << "\t" << sat.geo.height << "\t";
 				if (col == "pos") {
 					std::cout << sat.pos.x << "\t";
-					//if (sat.pos.x < 10000.0 && sat.pos.x > -1000.0) std::cout << "\t";
 					std::cout << sat.pos.y << "\t";
-					//if (sat.pos.y < 10000.0 && sat.pos.y > -1000.0) std::cout << "\t";
 					std::cout << sat.pos.z << "\t";
-					//if (sat.pos.z < 10000.0 && sat.pos.z > -1000.0) std::cout << "\t";
 				}
 				if (col == "vel") {
 					std::cout << sat.vel.x << "\t";
