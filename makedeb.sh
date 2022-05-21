@@ -3,17 +3,9 @@
 ver=$1
 
 # create structure
-mkdir arftracksat_$ver/
-mkdir arftracksat_$ver/usr/
-mkdir arftracksat_$ver/usr/local/
-mkdir arftracksat_$ver/usr/local/bin/
-mkdir arftracksat_$ver/usr/local/lib/
-mkdir arftracksat_$ver/usr/local/share/
-mkdir arftracksat_$ver/usr/local/share/doc/
-mkdir arftracksat_$ver/usr/local/share/doc/arftracksat/
-mkdir arftracksat_$ver/usr/local/etc/
-mkdir arftracksat_$ver/usr/local/etc/arftracksat/
-mkdir arftracksat_$ver/DEBIAN/
+mkdir -p arftracksat_$ver/usr/local/share/doc/arftracksat/
+mkdir -p arftracksat_$ver/usr/local/etc/arftracksat/
+mkdir -p arftracksat_$ver/DEBIAN/
 
 # create debian thing
 rm arftracksat_$ver/DEBIAN/control
@@ -28,10 +20,7 @@ echo 'Maintainer: arf20 <aruizfernandez05@gmail.com>' >> arftracksat_$ver/DEBIAN
 echo 'Description: CLI satellite tracking software' >> arftracksat_$ver/DEBIAN/control
 
 # copy files
-cp src/build/arftracksat arftracksat_$ver/usr/local/bin/
-cp src/sgp4/lib/*.so arftracksat_$ver/usr/local/lib/
-cp src/sgp4/lib/*.5 arftracksat_$ver/usr/local/lib/
-cp src/sgp4/lib/SGP4_Open_License.txt arftracksat_$ver/usr/local/share/doc/arftracksat/
+cp build/src/arftracksat arftracksat_$ver/usr/local/bin/
 cp config.json arftracksat_$ver/usr/local/etc/arftracksat/
 
 # set permissions
