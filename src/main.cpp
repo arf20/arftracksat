@@ -1,4 +1,4 @@
-#include "main.h"
+#include "main.hpp"
 
 #include <ctime>
 #include <thread>
@@ -94,6 +94,11 @@ void getTLEs(std::string root, std::vector<std::string> urls) {
 
 		tlef.close();
 	}
+}
+
+
+void startGraphics() {
+	
 }
 
 
