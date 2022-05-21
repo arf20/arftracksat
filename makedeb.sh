@@ -3,6 +3,7 @@
 ver=$1
 
 # create structure
+mkdir -p arftracksat_$ver/usr/local/bin/
 mkdir -p arftracksat_$ver/usr/local/share/doc/arftracksat/
 mkdir -p arftracksat_$ver/usr/local/etc/arftracksat/
 mkdir -p arftracksat_$ver/DEBIAN/
