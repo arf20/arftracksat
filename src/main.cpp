@@ -1,4 +1,5 @@
 #include "main.hpp"
+#include "graphics.hpp"
 
 #include <ctime>
 #include <thread>
@@ -96,12 +97,6 @@ void getTLEs(std::string root, std::vector<std::string> urls) {
 	}
 }
 
-
-void startGraphics() {
-	
-}
-
-
 int main(int argc, char **argv) {
 	std::cout << "arftracksat by arf20" << std::endl;
 
@@ -142,6 +137,12 @@ int main(int argc, char **argv) {
 
 	std::cout << "Setup done, entering loop..." << std::endl;
 	std::this_thread::sleep_for(std::chrono::milliseconds(1000));	// Give user time to read
+
+	// ========================= SETUP DONE =========================
+
+	// start graphics
+	std::thread graphicThread(startGraphics);
+	graphicThread.detach();
 
 	std::cout << std::setprecision(1) << std::fixed;	// 2 decimal digit precision
 

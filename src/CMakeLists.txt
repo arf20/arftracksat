@@ -14,12 +14,12 @@ set(SGPD4_SRC
 
 set(CONFJSON ../config.json)
 
-set(SOURCE_FILES ${SGPD4_SRC} sat.cpp main.cpp)
+set(SOURCE_FILES ${SGPD4_SRC} sat.cpp graphics.cpp main.cpp)
 set(CMAKE_DEFAULT_PROJECT_FILE main.cpp)
 
 add_executable(arftracksat ${SOURCE_FILES})
 
-target_link_libraries(arftracksat curl curlpp dl)
+target_link_libraries(arftracksat pthread curl curlpp dl GL GLU glut)
 
 install(TARGETS arftracksat RUNTIME DESTINATION bin)
 install(FILES ${CONFJSON} DESTINATION etc/arftracksat/)
