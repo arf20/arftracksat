@@ -1,4 +1,4 @@
-#include "main.hpp"
+#include "sat.hpp"
 
 #include "sgdp4/sgdp4.h"
 
@@ -6,9 +6,6 @@
 #include <string>
 #include <iostream>
 #include <fstream>
-
-#define TORAD	PI/180.0
-#define TODEG	180.0/PI
 
 std::vector<sat> sats;
 

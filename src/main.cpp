@@ -1,4 +1,5 @@
 #include "main.hpp"
+#include "sat.hpp"
 #include "graphics.hpp"
 
 #include <ctime>
@@ -20,7 +21,7 @@ std::string tleroot;
 
 station sta;
 
-bool checkConfig() {
+bool validateConfig() {
 #ifdef _WIN32
 	constexpr auto confPath = "config.json";
 #else
@@ -44,7 +45,7 @@ bool checkConfig() {
 	if (config["tleroot"].type() != json::value_t::string) { std::cout << "tleroot is not a string" << std::endl; return false; }
 	tleroot = config["tleroot"];
 	if (!std::filesystem::exists(tleroot)) { 
-		std::cout << "tleroot does not, exist creating it: " << tleroot << std::endl;
+		std::cout << "tleroot does not exist, creating it: " << tleroot << std::endl;
 		if (!std::filesystem::create_directory(tleroot)) { std::cout << "error creating directory. tleroot invalid" << std::endl; return false; }
 	}
 
@@ -62,6 +63,13 @@ bool checkConfig() {
 	if (!config["station"].contains("hgt")) { std::cout << "hgt not defined in config" << std::endl; return false; }
 	if (config["station"]["hgt"].type() != json::value_t::number_float) { std::cout << "hgt is not a decimal number" << std::endl; return false; }
 
+	if (!config.contains("mapfile")) { std::cout << "mapfile not defined in config" << std::endl; return false; }
+	if (config["mapfile"].type() != json::value_t::string) { std::cout << "mapfile is not a string" << std::endl; return false; }
+	std::string mapfile = config["mapfile"];
+	if (!std::filesystem::exists(mapfile)) { 
+		std::cout << "mapfile does not exist: " << mapfile << std::endl;
+		return false;
+	}
 
 	return true;
 }
@@ -101,7 +109,7 @@ int main(int argc, char **argv) {
 	std::cout << "arftracksat by arf20" << std::endl;
 
 	// check json
-	if (!checkConfig()) exit(1);
+	if (!validateConfig()) exit(1);
 
 	// get tle files from celestrak
 	getTLEs(tleroot, config["tlesources"].get<std::vector<std::string>>());
@@ -143,6 +151,8 @@ int main(int argc, char **argv) {
 	// start graphics
 	std::thread graphicThread(startGraphics);
 	graphicThread.detach();
+
+	std::this_thread::sleep_for(std::chrono::milliseconds(1000));	// Give user time to read
 
 	std::cout << std::setprecision(1) << std::fixed;	// 2 decimal digit precision
 

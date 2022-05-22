@@ -31,6 +31,9 @@ struct station {
 	xyz_t geo;
 };
 
+#define TORAD	PI/180.0
+#define TODEG	180.0/PI
+
 #define EARTHR	6371.0
 #define EQR		6378.0
 #define POR		6356.8
@@ -65,8 +68,3 @@ inline double xyzdot(xyz_t left, xyz_t right) {
 // main
 extern json config;
 extern station sta;
-
-// SAT
-extern std::vector<sat> sats;
-void loadSats(std::string tlefile);
-void computeSats(time_t t);
