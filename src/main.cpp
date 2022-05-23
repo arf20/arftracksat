@@ -134,7 +134,7 @@ int main(int argc, char **argv) {
 	columns = config["columns"].get<std::vector<std::string>>();
 
 	for (int i = 0; i < sats.size(); i++) {
-		if (std::find(show.begin(), show.end(), sats[i].name) != show.end()) { shownSats.push_back(sats.begin() + i); }
+		if ((std::find(show.begin(), show.end(), sats[i].name) != show.end()) || (show.size() == 0)) { shownSats.push_back(sats.begin() + i); }
 	}
 
 	// set station data
@@ -218,9 +218,8 @@ int main(int argc, char **argv) {
 		std::cout << cl1 << std::endl << cl2 << std::endl;
 
 		// per sat loop
-		for (sat& sat : sats) {
-			// do only for selected sats (show)
-			if (std::find(show.begin(), show.end(), sat.name) == show.end()) continue;
+		for (int i = 0; i < shownSats.size(); i++) {
+			sat& sat = *shownSats[i];
 
 			// per column
 			for (std::string& col : columns) {

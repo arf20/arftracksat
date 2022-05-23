@@ -287,9 +287,8 @@ void render2d() {
     DrawShape(stashape, stapos, 2.5, {0.0f, 1.0f, 0.0f});
 
     // Draw sats
-    for (int i = 0; i < sats.size(); i++) {
-        sat& sat = sats[i];
-        if (std::find(show.begin(), show.end(), sat.name) == show.end()) continue;
+    for (int i = 0; i < shownSats.size(); i++) {
+        sat& sat = *shownSats[i];
         xyz_t satpos = geoToMercator(sat.geo);
 
         xyz_t c = C_RED;
