@@ -5,7 +5,7 @@ SGDP4 adaptation shamelessly copied from BatchDrake's suscan.
 Install dependencies
 ```
 sudo apt update
-sudo apt install nlohmann-json3-dev libcurl4-openssl-dev libcurlpp-dev
+sudo apt install nlohmann-json3-dev libcurl4-openssl-dev libcurlpp-dev libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev
 ```
 Build
 ```
