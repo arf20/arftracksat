@@ -49,6 +49,10 @@ inline xyz_t operator-(const xyz_t left, const xyz_t right) {
   return xyz_t{ left.x - right.x, left.y - right.y, left.z - right.z };
 }
 
+inline xyz_t operator*(const xyz_t left, double right) {
+  return xyz_t{ left.x * right, left.y * right, left.z * right };
+}
+
 inline xyz_t operator/(const xyz_t left, double right) {
   return xyz_t{ left.x / right, left.y / right, left.z / right };
 }
@@ -68,3 +72,6 @@ inline double xyzdot(xyz_t left, xyz_t right) {
 // main
 extern json config;
 extern station sta;
+
+extern std::vector<std::string> show;
+extern std::vector<std::string> columns;

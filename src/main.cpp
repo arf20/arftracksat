@@ -21,6 +21,10 @@ std::string tleroot;
 
 station sta;
 
+// sat filter and column filter
+std::vector<std::string> show;
+std::vector<std::string> columns;
+
 bool validateConfig() {
 #ifdef _WIN32
 	constexpr auto confPath = "config.json";
@@ -125,8 +129,6 @@ int main(int argc, char **argv) {
 	long period = config["updatePerdiod"];	
 
 	// sat filter and column filter
-	std::vector<std::string> show;
-	std::vector<std::string> columns;
 	show = config["show"].get<std::vector<std::string>>();
 	columns = config["columns"].get<std::vector<std::string>>();
 
