@@ -156,7 +156,7 @@ void common2d() {
 	xyz_t curpos{ 200.0f + (width / 2.0f), 50.0 };
 	float subcolspacing = 100;
 
-	DrawString(curpos, "STATION"); curpos.y += 2.0f * TEXT_HEIGHT;
+	DrawString(curpos, "STATION " + sta.name); curpos.y += 2.0f * TEXT_HEIGHT;
 
 	//DrawString(curpos, "LAT, LON, HGT"); curpos.y += TEXT_HEIGHT;
 	//DrawString(curpos, std::to_string(sta.geo.lat) + ", " + std::to_string(sta.geo.lon) + ", " + std::to_string((sta.geo.height))); curpos.y += 2.0f * TEXT_HEIGHT;

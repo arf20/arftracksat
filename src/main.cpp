@@ -134,8 +134,20 @@ int main(int argc, char **argv) {
 	columns = config["columns"].get<std::vector<std::string>>();
 
 	for (int i = 0; i < sats.size(); i++) {
-		if ((std::find(show.begin(), show.end(), sats[i].name) != show.end()) || (show.size() == 0)) { shownSats.push_back(sats.begin() + i); }
+		if (show.size() == 0) {															// if show empty, shove all in
+			shownSats.push_back(sats.begin() + i);
+		}
+		else if (std::find(show.begin(), show.end(), sats[i].name) != show.end()) {		// if show not empty, shove show in
+			shownSats.push_back(sats.begin() + i);
+		} 
 	}
+
+	// if show was completely invalid, shove everything in
+	if (shownSats.size() == 0) {
+		for (int i = 0; i < sats.size(); i++) {
+			shownSats.push_back(sats.begin() + i);
+		}
+	} 
 
 	// set station data
 	sta.name = config["station"]["name"];
