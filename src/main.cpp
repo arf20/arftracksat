@@ -23,6 +23,7 @@ station sta;
 
 // sat filter and column filter
 std::vector<std::string> show;
+std::vector<std::vector<sat>::iterator> shownSats;
 std::vector<std::string> columns;
 
 bool validateConfig() {
@@ -131,6 +132,10 @@ int main(int argc, char **argv) {
 	// sat filter and column filter
 	show = config["show"].get<std::vector<std::string>>();
 	columns = config["columns"].get<std::vector<std::string>>();
+
+	for (int i = 0; i < sats.size(); i++) {
+		if (std::find(show.begin(), show.end(), sats[i].name) != show.end()) { shownSats.push_back(sats.begin() + i); }
+	}
 
 	// set station data
 	sta.name = config["station"]["name"];

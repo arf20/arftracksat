@@ -27,7 +27,7 @@ static GLfloat height = 1;
 
 #define TEXT_HEIGHT 15
 
-#define SCL 360
+#define SCL 360     // perfect for 480 height
 
 #define C_RED     {1.0f, 0.0f, 0.0f}
 #define C_GREEN   {0.0f, 1.0f, 0.0f}
@@ -37,7 +37,11 @@ static GLfloat height = 1;
 
 static std::vector<shape> continents;
 
-int selsat = 0;
+static int selsatidx = 0;     // index of shownSats
+
+static int frame = 0;
+static float startTime = 0.0f;
+static float timebase = 0.0f;
 
 // Primitive drawing functions
 
@@ -115,6 +119,13 @@ template <typename T> int sgn(T val) {
 	return (T(0) < val) - (val < T(0));
 }
 
+std::string toString(float n) {
+    std::ostringstream out;
+    out.precision(2);
+    out << std::fixed << n;
+    return out.str();
+}
+
 xyz_t geoToMercator(xyz_t geo) {
 	xyz_t t;
 	t.x = (SCL / (2.0f * PI)) * 2.0f * ((TORAD * geo.lon) + PI);
@@ -126,6 +137,127 @@ void DrawGeoLine(xyz_t geo1, xyz_t geo2, xyz_t c = C_WHITE) {
 	xyz_t t1 = geoToMercator(geo1);
 	xyz_t t2 = geoToMercator(geo2);
 	DrawLine(t1, t2, c);
+}
+
+void common2d() {
+    // Draw info
+    frame++;
+	startTime = glutGet(GLUT_ELAPSED_TIME);
+    float fps = 0.0f;
+	if (startTime - timebase > 1000) {
+		fps = frame * 1000.0f / (startTime - timebase);
+	 	timebase = startTime;
+		frame = 0;
+	}
+
+    DrawString({20, 20}, toString(fps));
+
+	// Station column
+	xyz_t curpos{ 200.0f + (width / 2.0f), 50.0 };
+	float subcolspacing = 100;
+
+	DrawString(curpos, "STATION"); curpos.y += 2.0f * TEXT_HEIGHT;
+
+	//DrawString(curpos, "LAT, LON, HGT"); curpos.y += TEXT_HEIGHT;
+	//DrawString(curpos, std::to_string(sta.geo.lat) + ", " + std::to_string(sta.geo.lon) + ", " + std::to_string((sta.geo.height))); curpos.y += 2.0f * TEXT_HEIGHT;
+	
+	DrawString(curpos, "LAT"); curpos.y += TEXT_HEIGHT; 
+	DrawString(curpos, toString(sta.geo.lat)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
+	DrawString(curpos, "LON"); curpos.y += TEXT_HEIGHT;
+	DrawString(curpos, toString(sta.geo.lon)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
+	DrawString(curpos, "HGT"); curpos.y += TEXT_HEIGHT;
+	DrawString(curpos, toString(sta.geo.height)); curpos.x -= 2.0f * subcolspacing; curpos.y += 2.0f * TEXT_HEIGHT;
+
+	DrawString(curpos, "X"); curpos.y += TEXT_HEIGHT;
+	DrawString(curpos, toString(sta.pos.x)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
+	DrawString(curpos, "Y"); curpos.y += TEXT_HEIGHT;
+	DrawString(curpos, toString(sta.pos.y)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
+	DrawString(curpos, "Z"); curpos.y += TEXT_HEIGHT;
+	DrawString(curpos, toString(sta.pos.z)); curpos.x -= 2.0f * subcolspacing; curpos.y += 2.0f * TEXT_HEIGHT;
+
+    // now in unix time
+    static tm *futctime = new tm;
+    static tm *floctime = new tm;
+    static tm *aosloctime = new tm;
+    static tm *aosutctime = new tm;
+
+	time_t utct = time(NULL);
+
+    gmtime_r(&utct, futctime);
+	localtime_r(&utct, floctime);
+
+    DrawString(curpos, "TIME    UTC    " + std::to_string(futctime->tm_hour) + ":" + std::to_string(futctime->tm_min) + ":" + std::to_string(futctime->tm_sec)); curpos.y += TEXT_HEIGHT;
+	DrawString(curpos, "        LOCAL  " + std::to_string(floctime->tm_hour) + ":" + std::to_string(floctime->tm_min) + ":" + std::to_string(floctime->tm_sec)); curpos.y += 4.0f * TEXT_HEIGHT;
+
+    // Sat column
+	//curpos = { 200.f + (ScreenWidth() / 2.0f), 100 };
+
+    DrawString(curpos, "SATELLITE"); curpos.y += 2.0f * TEXT_HEIGHT;
+
+    for (int i = 0; i < shownSats.size(); i++) {
+        auto sat = shownSats[i];
+        xyz_t c = C_WHITE;
+		if (i == selsatidx) { c = C_YELLOW; }
+
+		DrawString(curpos, std::to_string(i + 1) + ". " + sat->name, c);
+
+		curpos.y += TEXT_HEIGHT;
+    }
+
+    auto selsat = shownSats[selsatidx];
+
+	curpos.y += 2.0f * TEXT_HEIGHT;
+
+    gmtime_r(&utct, aosutctime);
+	localtime_r(&utct, aosloctime);
+
+    // AOS
+    DrawString(curpos, "NEXT AOS UTC      " + std::to_string(aosutctime->tm_hour) + ":" + std::to_string(aosutctime->tm_min) + ":" + std::to_string(aosutctime->tm_sec)); curpos.y += TEXT_HEIGHT;
+	DrawString(curpos, "         LOCAL    " + std::to_string(aosloctime->tm_hour) + ":" + std::to_string(aosloctime->tm_min) + ":" + std::to_string(aosloctime->tm_sec)); curpos.y += 2.0f * TEXT_HEIGHT;
+
+    // AZEL
+    DrawString(curpos, "AZ"); curpos.y += TEXT_HEIGHT;
+	DrawString(curpos, toString(selsat->aer.azimuth)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
+	DrawString(curpos, "EL"); curpos.y += TEXT_HEIGHT;
+	DrawString(curpos, toString(selsat->aer.elevation)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
+	DrawString(curpos, "DIS"); curpos.y += TEXT_HEIGHT;
+	DrawString(curpos, toString(selsat->aer.distance)); curpos.x -= 2.0f * subcolspacing; curpos.y += 2.0f * TEXT_HEIGHT;
+
+    // GEO
+	DrawString(curpos, "LAT"); curpos.y += TEXT_HEIGHT;
+	DrawString(curpos, toString(selsat->geo.lat)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
+	DrawString(curpos, "LON"); curpos.y += TEXT_HEIGHT;
+	DrawString(curpos, toString(selsat->geo.lon)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
+	DrawString(curpos, "HGT"); curpos.y += TEXT_HEIGHT;
+	DrawString(curpos, toString(selsat->geo.height)); curpos.x -= 2.0f * subcolspacing; curpos.y += 2.0f * TEXT_HEIGHT;
+
+    // ECEF
+	DrawString(curpos, "POS"); curpos.y += TEXT_HEIGHT;
+	DrawString(curpos, "X"); curpos.y += TEXT_HEIGHT;
+	DrawString(curpos, toString(selsat->pos.x)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
+	DrawString(curpos, "Y"); curpos.y += TEXT_HEIGHT;
+	DrawString(curpos, toString(selsat->pos.y)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
+	DrawString(curpos, "Z"); curpos.y += TEXT_HEIGHT;
+	DrawString(curpos, toString(selsat->pos.z)); curpos.x -= 2.0f * subcolspacing; curpos.y += 2.0f * TEXT_HEIGHT;
+
+    // VEL ECEF
+	DrawString(curpos, "VEL"); curpos.y += TEXT_HEIGHT;
+	DrawString(curpos, "X"); curpos.y += TEXT_HEIGHT;
+	DrawString(curpos, toString(selsat->vel.x)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
+	DrawString(curpos, "Y"); curpos.y += TEXT_HEIGHT;
+	DrawString(curpos, toString(selsat->vel.y)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
+	DrawString(curpos, "Z"); curpos.y += TEXT_HEIGHT;
+	DrawString(curpos, toString(selsat->vel.z)); curpos.x -= 2.0f * subcolspacing; curpos.y += 2.0f * TEXT_HEIGHT;
+
+    // DOPPLER
+	/*DrawString(curpos, "FREQ"); curpos.y += TEXT_HEIGHT;
+	DrawString(curpos, std::to_string(selsat->freq / 1000000.0)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
+	DrawString(curpos, "DOPPLER"); curpos.y += TEXT_HEIGHT;
+	DrawString(curpos, std::to_string(selsat->dopShift)); curpos.x -= subcolspacing; curpos.y += 2.0f * TEXT_HEIGHT;
+    
+    
+	DrawString(curpos, "COMPUTE TIME"); curpos.y += TEXT_HEIGHT;
+	DrawString(curpos, std::to_string(computeTime)); curpos.y += TEXT_HEIGHT;*/
 }
 
 void render2d() {
@@ -161,14 +293,14 @@ void render2d() {
         xyz_t satpos = geoToMercator(sat.geo);
 
         xyz_t c = C_RED;
-        if (i == selsat) c = C_YELLOW;
+        if (i == selsatidx) c = C_YELLOW;
 
         // Draw AOS radius
         /*double finestep = 5.0;
         for (double a = 0.0; a <= 360.0; a += finestep) {
             xyz_t p1{ sat.geo.lat + (sat.AOSRadius * sin(TORAD * a)),  sat.geo.lon + (sat.AOSRadius * cos(TORAD * a)), 0.0 };
             xyz_t p2{ sat.geo.lat + (sat.AOSRadius * sin(TORAD * (a + finestep))),  sat.geo.lon + (sat.AOSRadius * cos(TORAD * (a + finestep))), 0.0 };
-            DrawGeoLine(p1.latlon(), p2.latlon(), p);
+            DrawGeoLine(p1.latlon, p2.latlon, p);
         }*/
 
         DrawShape(satshape, satpos, 2.5, c);
@@ -213,6 +345,7 @@ void render() {
     // with screen coordinates
     glTranslatef(-1.0, 1.0f, 0.0f);
     glScalef(2.0f/width, -2.0f/height, 0.0f);
+    common2d();
     render2d();
 
     glutSwapBuffers();
@@ -239,7 +372,7 @@ void startGraphics() {
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | GLUT_MULTISAMPLE);
     glutInitContextVersion(3, 0);
     glutInitWindowSize(640, 480);
-    glutCreateWindow("OpenGL test");
+    glutCreateWindow("arftracksat graphic");
 
     // set callbacks
     glutDisplayFunc(render);

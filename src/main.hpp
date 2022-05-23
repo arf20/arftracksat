@@ -74,4 +74,5 @@ extern json config;
 extern station sta;
 
 extern std::vector<std::string> show;
+extern std::vector<std::vector<sat>::iterator>  shownSats;
 extern std::vector<std::string> columns;
