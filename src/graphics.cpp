@@ -14,12 +14,6 @@ using namespace nlohmann;
 #include <fstream>
 #include <vector>
 
-// Structures
-
-struct shape {
-	std::vector<xyz_t> points;
-};
-
 // Globals
 
 static GLfloat width = 1;
@@ -37,8 +31,6 @@ static GLfloat height = 1;
 
 static std::vector<shape> continents;
 
-static int selsatidx = 0;     // index of shownSats
-
 static int frame = 0;
 static float startTime = 0.0f;
 static float timebase = 0.0f;
@@ -55,7 +47,8 @@ void DrawLine(xyz_t a, xyz_t b, xyz_t c) {
     glEnd();
 }
 
-void DrawShape(std::vector<xyz_t> shape, xyz_t pos, float scale, xyz_t c = C_WHITE) {
+void DrawShape(std::vector<xyz_t>& shape, xyz_t pos, float scale, xyz_t c = C_WHITE) {
+    if (shape.size() == 0) return;
 	for (int i = 0; i < shape.size() - 1; i++) {
 		xyz_t v1{ shape[i].x, -shape[i].y };
 		xyz_t v2{ shape[i + 1].x, -shape[i + 1].y };
@@ -141,12 +134,30 @@ void DrawGeoLine(xyz_t geo1, xyz_t geo2, xyz_t c = C_WHITE) {
 	DrawLine(t1, t2, c);
 }
 
+void DrawGeoLines(std::vector<xyz_t>& lines, xyz_t c = C_WHITE) {
+    if (lines.size() == 0) return;
+    for (int i = 0; i < lines.size() - 1; i++) {
+        if (abs(lines[i + 1].lon - lines[i].lon) > 50.0f) continue;
+	    DrawGeoLine(lines[i], lines[i + 1], c);
+    }
+}
+
+void DrawGeoShape(std::vector<xyz_t>& shape, xyz_t c = C_WHITE) {
+    if (shape.size() == 0) return;
+    for (int i = 0; i < shape.size() - 1; i++) {
+        if (abs(shape[i + 1].lon - shape[i].lon) > 50.0f) continue;
+	    DrawGeoLine(shape[i], shape[i + 1], c);
+    }
+    DrawGeoLine(shape[0], shape[shape.size() - 1], c);
+}
+
 // ================== callbacks ==================
 
 void keyboard(unsigned char key, int x, int y) {
     if (key >= '1' && key <= '9') {
         // Select satellite 1-9
-        selsatidx = key - '1';
+        if (key - '1' < shownSats.size())
+            selsatidx = key - '1';
         return;
     }
 
@@ -280,7 +291,7 @@ void common2d() {
 	/*DrawString(curpos, "FREQ"); curpos.y += TEXT_HEIGHT;
 	DrawString(curpos, std::to_string(selsat->freq / 1000000.0)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
 	DrawString(curpos, "DOPPLER"); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, std::to_string(selsat->dopShift)); curpos.x -= subcolspacing; curpos.y += 2.0f * TEXT_HEIGHT;
+	DrawString(curpos, std::to_string(selsat->doppler)); curpos.x -= subcolspacing; curpos.y += 2.0f * TEXT_HEIGHT;
     
     
 	DrawString(curpos, "COMPUTE TIME"); curpos.y += TEXT_HEIGHT;
@@ -300,14 +311,16 @@ void render2d() {
 
     // Draw map                                                           
     for (shape &continent : continents) {
-        for (int i = 0; i < continent.points.size() - 2; i++) {
+        /*for (int i = 0; i < continent.points.size() - 2; i++) {
             if ((sgn(continent.points[i].lon) != sgn(continent.points[i + 1].lon))
                 && (continent.points[i].lon > 170.0 || continent.points[i].lon < -170.0)
                 && (continent.points[i + 1].lon > 170.0 || continent.points[i + 1].lon < -170.0)) continue;
             DrawGeoLine(continent.points[i], continent.points[i + 1]);
         }
-        DrawGeoLine(continent.points[0], continent.points[continent.points.size() - 1]);
+        DrawGeoLine(continent.points[0], continent.points[continent.points.size() - 1]);*/
+        DrawGeoShape(continent.points);
     }
+    
 
     // Draw sta                                                            
     xyz_t stapos = geoToMercator(sta.geo);
@@ -319,7 +332,12 @@ void render2d() {
         xyz_t satpos = geoToMercator(sat.geo);
 
         xyz_t c = C_RED;
-        if (i == selsatidx) c = C_YELLOW;
+        if (i == selsatidx) {
+            c = C_YELLOW;
+
+            // Draw orbit for selected sat
+            DrawGeoLines(sat.geoOrbit.points, {0xff, 0xa5, 0x00});
+        }
 
         // Draw AOS radius
         /*double finestep = 5.0;
@@ -329,6 +347,7 @@ void render2d() {
             DrawGeoLine(p1.latlon, p2.latlon, p);
         }*/
 
+        // Draw icon
         DrawShape(satshape, satpos, 2.5, c);
         DrawString({ satpos.x + 13, satpos.y - 3 }, sat.name, c);
     }

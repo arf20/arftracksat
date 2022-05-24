@@ -26,6 +26,8 @@ std::vector<std::string> show;
 std::vector<std::vector<sat>::iterator> shownSats;
 std::vector<std::string> columns;
 
+int selsatidx = 0;     // index of shownSats
+
 bool validateConfig() {
 #ifdef _WIN32
 	constexpr auto confPath = "config.json";
@@ -258,7 +260,7 @@ int main(int argc, char **argv) {
 			}
 
 			// hardcoded doppler print for debug
-			std::cout << "\t" << sat.dopShift << std::endl;
+			std::cout << "\t" << sat.doppler << std::endl;
 		}
 
 		// sleep for period

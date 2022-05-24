@@ -48,8 +48,8 @@ void loadSats(std::string tlefile) {
 }
 
 void computeSats(time_t t) {
-	for (sat& sat : sats) {
-		double mse;
+	for (int i = 0; i < shownSats.size(); i++) {
+		sat& sat = *shownSats[i];
 		// init
 		sgdp4_prediction_t pred;
 		xyz_t stageo = geodegtorad(sta.geo);
@@ -108,15 +108,30 @@ void computeSats(time_t t) {
 		// Elevation is that angle minus 90�
 		sat.aer.elevation = (TODEG * phi) - 90;
 
-
-
 		// Radius (range) to sat
 		sat.aer.distance = osLen;
-		// Great circle distance
-		//sat.aer.gcd = gcd;
 
 
-		sat.rVel = xyzdot(sat.vel - sta.vel, xyzunit(sat.pos - sta.pos));
-		sat.dopShift = (sat.rVel / LIGHTC) * 137500000.0;
+		float rVel = xyzdot(sat.vel - sta.vel, xyzunit(sat.pos - sta.pos));
+		sat.doppler = (rVel / LIGHTC) * 137500000.0;
+
+
+		// Compute orbit
+		sat.geoOrbit.points.clear();
+		float orbitalPeriod = (1.0f / sat.orbit.rev) * 24.0f * 60.0f * 60.0f;
+		time_t orbitStart = t - orbitalPeriod;
+		time_t orbitEnd = t + orbitalPeriod;
+		xyz_t t_ecef;
+		xyz_t t_geo;
+		for (t = orbitStart; t <= orbitEnd; t += 60) {
+			tv.tv_sec = t; tv.tv_usec = 0;
+			sgdp4_prediction_update(&pred, &tv);	// propagate
+			sgdp4_prediction_get_ecef(&pred, &t_ecef);
+			xyz_ecef_to_geodetic(&t_ecef, &t_geo);
+			t_geo = georadtodeg(t_geo);
+			sat.geoOrbit.points.push_back(t_geo);
+		}
+
+		sgdp4_prediction_finalize(&pred);
 	}
 }

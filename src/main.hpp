@@ -9,6 +9,10 @@
 #include <nlohmann/json.hpp>
 using namespace nlohmann;
 
+struct shape {
+	std::vector<xyz_t> points;
+};
+
 struct sat {
 	std::string name;
 	std::string norad;
@@ -18,10 +22,10 @@ struct sat {
 	xyz_t vel;
 	xyz_t geo;
 	xyz_t aer;
-	double rVel;
-	double dopShift;
+	double doppler;
 	time_t aos;
 	time_t los;
+	shape geoOrbit;
 };
 
 struct station {
@@ -76,3 +80,4 @@ extern station sta;
 extern std::vector<std::string> show;
 extern std::vector<std::vector<sat>::iterator>  shownSats;
 extern std::vector<std::string> columns;
+extern int selsatidx;
