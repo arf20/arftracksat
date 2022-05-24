@@ -43,6 +43,8 @@ static int frame = 0;
 static float startTime = 0.0f;
 static float timebase = 0.0f;
 
+static bool mode = false;     // false = 2D, true = 3D
+
 // Primitive drawing functions
 
 void DrawLine(xyz_t a, xyz_t b, xyz_t c) {
@@ -137,6 +139,31 @@ void DrawGeoLine(xyz_t geo1, xyz_t geo2, xyz_t c = C_WHITE) {
 	xyz_t t1 = geoToMercator(geo1);
 	xyz_t t2 = geoToMercator(geo2);
 	DrawLine(t1, t2, c);
+}
+
+// ================== callbacks ==================
+
+void keyboard(unsigned char key, int x, int y) {
+    if (key >= '1' && key <= '9') {
+        // Select satellite 1-9
+        selsatidx = key - '1';
+        return;
+    }
+
+    switch (key) {
+        case 'c':   // Exit
+        case 'C':
+            exit(0);
+        break;
+        case 'z':   // Switch to 2D
+        case 'Z':
+            mode = false;
+        break;
+        case 'x':   // Switch to 3D
+        case 'X':
+            mode = true;
+        break;
+    }
 }
 
 void common2d() {
@@ -323,16 +350,33 @@ void render() {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);                   // Set background color to black and opaque
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);     // Clear the color and depth buffers
 
-    // set perspective projection
-    glMatrixMode(GL_PROJECTION);  // To operate on the Projection matrix
-    glLoadIdentity();             // Reset
-    gluPerspective(45.0f, width / height, 0.1f, 100.0f);
+    if (mode) { // 3D
+        // set perspective projection
+        glMatrixMode(GL_PROJECTION);  // To operate on the Projection matrix
+        glLoadIdentity();             // Reset
+        gluPerspective(45.0f, width / height, 0.1f, 100.0f);
 
-    // render 3D scene
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    render3d();
+        // render 3D scene
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+        render3d();
+    }
+    else {  // 2D
+        // set orthogonal projection
+        glMatrixMode(GL_PROJECTION);  // To operate on the Projection matrix
+        glLoadIdentity();             // Reset
 
+        // render 2D scene on top
+        glClear(GL_DEPTH_BUFFER_BIT);   // clear depth buffer
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+        // with screen coordinates
+        glTranslatef(-1.0, 1.0f, 0.0f);
+        glScalef(2.0f/width, -2.0f/height, 0.0f);
+        render2d();
+    }
+
+    // COMMON between modes, also in 2D
     // set orthogonal projection
     glMatrixMode(GL_PROJECTION);  // To operate on the Projection matrix
     glLoadIdentity();             // Reset
@@ -345,7 +389,6 @@ void render() {
     glTranslatef(-1.0, 1.0f, 0.0f);
     glScalef(2.0f/width, -2.0f/height, 0.0f);
     common2d();
-    render2d();
 
     glutSwapBuffers();
 }
@@ -377,6 +420,7 @@ void startGraphics() {
     glutDisplayFunc(render);
     glutIdleFunc(render);
     glutReshapeFunc(reshape);
+    glutKeyboardFunc(keyboard);
 
     // enable depth test
     glEnable(GL_DEPTH_TEST);
