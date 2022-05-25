@@ -347,12 +347,13 @@ void render2d() {
         }
 
         // Draw AOS radius
-        /*double finestep = 5.0;
+        double finestep = 5.0;
         for (double a = 0.0; a <= 360.0; a += finestep) {
-            xyz_t p1{ sat.geo.lat + (sat.AOSRadius * sin(TORAD * a)),  sat.geo.lon + (sat.AOSRadius * cos(TORAD * a)), 0.0 };
-            xyz_t p2{ sat.geo.lat + (sat.AOSRadius * sin(TORAD * (a + finestep))),  sat.geo.lon + (sat.AOSRadius * cos(TORAD * (a + finestep))), 0.0 };
-            DrawGeoLine(p1.latlon, p2.latlon, p);
-        }*/
+            xyz_t p1{ sat.geo.lon + (sat.aosRadiusAngle * cos(TORAD * a)), sat.geo.lat + (sat.aosRadiusAngle * sin(TORAD * a)) };
+            xyz_t p2{ sat.geo.lon + (sat.aosRadiusAngle * cos(TORAD * (a + finestep))), sat.geo.lat + (sat.aosRadiusAngle * sin(TORAD * (a + finestep))) };
+            if (abs(p1.lat) > 89.0f || abs(p2.lat) > 89.0f) continue;
+            DrawGeoLine(p1, p2, c);
+        }
 
         // Draw icon
         DrawShape(satshape, satpos, 2.5, c);

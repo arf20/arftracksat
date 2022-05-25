@@ -26,6 +26,7 @@ struct sat {
 	time_t aos;
 	time_t los;
 	shape geoOrbit;
+	float aosRadiusAngle;
 };
 
 struct station {

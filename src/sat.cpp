@@ -94,14 +94,14 @@ void computeSats(time_t t_now) {
 		// Haversine formulae
 		double h = pow(sin((TORAD * deltaLat) / 2.0), 2)
 			+ (cos(TORAD * sta.geo.lat) * cos(TORAD * sat.geo.lat) * pow(sin((TORAD * deltaLon) / 2.0), 2));	// haversine of theta
-		double theta = 2.0 * atan2(sqrt(h), sqrt(1.0 - h));															// arc angle between 2 coords (rad)
-		double gcd = EARTHR * theta;																				// arc length
+		double theta = 2.0 * atan2(sqrt(h), sqrt(1.0 - h));														// arc angle between 2 coords (rad)
+		double gcd = EARTHR * theta;																			// arc length
 
 		// Triangle:  earth center (C), observer (O) and satellite (S)
-		double oRLen = EARTHR + sta.geo.height;																		// CO length
-		double sRLen = EARTHR + sat.geo.height;																		// CS length
+		double oRLen = EARTHR + sta.geo.height;																	// CO length
+		double sRLen = EARTHR + sat.geo.height;																	// CS length
 			
-		double osLen = sqrt(pow(oRLen, 2) + pow(sRLen, 2) - (2 * oRLen * sRLen * cos(theta)));						// OS length (missing side)
+		double osLen = sqrt(pow(oRLen, 2) + pow(sRLen, 2) - (2 * oRLen * sRLen * cos(theta)));					// OS length (missing side)
 
 		// Find CO OS angle
 		double phi = asin((sRLen * sin(theta)) / osLen);
@@ -123,6 +123,10 @@ void computeSats(time_t t_now) {
 		sgdp4_prediction_find_los(&pred, &tv, 24 * 60 * 60, &tv_los);
 		sat.aos = tv_aos.tv_sec;
 		sat.los = tv_los.tv_sec;
+
+		// Find AOS radius
+		sat.aosRadiusAngle = TODEG * acos(EARTHR / (EARTHR + sat.geo.height));
+		
 
 		// Compute orbit
 		sat.geoOrbit.points.clear();
