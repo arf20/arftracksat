@@ -156,7 +156,7 @@ int main(int argc, char **argv) {
 
 	sta.geo.lat = config["station"]["lat"];
 	sta.geo.lon = config["station"]["lon"];
-	sta.geo.height = config["station"]["hgt"];
+	sta.geo.height = float(config["station"]["hgt"]) / 1000.0f;
 
 	xyz_geodetic_to_ecef(&sta.geo, &sta.pos);
 
