@@ -116,6 +116,13 @@ void computeSats(time_t t_now) {
 		float rVel = xyzdot(sat.vel - sta.vel, xyzunit(sat.pos - sta.pos));
 		sat.doppler = (rVel / LIGHTC) * 137500000.0;
 
+		// Find AOS & LOS within a day
+		timeval tv_aos;
+		timeval tv_los;
+		sgdp4_prediction_find_aos(&pred, &tv, 24 * 60 * 60, &tv_aos);
+		sgdp4_prediction_find_los(&pred, &tv, 24 * 60 * 60, &tv_los);
+		sat.aos = tv_aos.tv_sec;
+		sat.los = tv_los.tv_sec;
 
 		// Compute orbit
 		sat.geoOrbit.points.clear();

@@ -196,9 +196,6 @@ void common2d() {
 
 	DrawString(curpos, "STATION " + sta.name); curpos.y += 2.0f * TEXT_HEIGHT;
 
-	//DrawString(curpos, "LAT, LON, HGT"); curpos.y += TEXT_HEIGHT;
-	//DrawString(curpos, std::to_string(sta.geo.lat) + ", " + std::to_string(sta.geo.lon) + ", " + std::to_string((sta.geo.height))); curpos.y += 2.0f * TEXT_HEIGHT;
-	
 	DrawString(curpos, "LAT"); curpos.y += TEXT_HEIGHT; 
 	DrawString(curpos, toString(sta.geo.lat)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
 	DrawString(curpos, "LON"); curpos.y += TEXT_HEIGHT;
@@ -214,18 +211,15 @@ void common2d() {
 	DrawString(curpos, toString(sta.pos.z)); curpos.x -= 2.0f * subcolspacing; curpos.y += 2.0f * TEXT_HEIGHT;
 
     // now in unix time
-    static tm *futctime = new tm;
-    static tm *floctime = new tm;
-    static tm *aosloctime = new tm;
-    static tm *aosutctime = new tm;
+    time_t utct = time(NULL);
+    tm futctime;
+    tm floctime;
 
-	time_t utct = time(NULL);
+    gmtime_r(&utct, &futctime);
+	localtime_r(&utct, &floctime);
 
-    gmtime_r(&utct, futctime);
-	localtime_r(&utct, floctime);
-
-    DrawString(curpos, "TIME    UTC    " + std::to_string(futctime->tm_hour) + ":" + std::to_string(futctime->tm_min) + ":" + std::to_string(futctime->tm_sec)); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, "        LOCAL  " + std::to_string(floctime->tm_hour) + ":" + std::to_string(floctime->tm_min) + ":" + std::to_string(floctime->tm_sec)); curpos.y += 4.0f * TEXT_HEIGHT;
+    DrawString(curpos, "TIME    UTC    " + std::to_string(futctime.tm_hour) + ":" + std::to_string(futctime.tm_min) + ":" + std::to_string(futctime.tm_sec)); curpos.y += TEXT_HEIGHT;
+	DrawString(curpos, "        LOCAL  " + std::to_string(floctime.tm_hour) + ":" + std::to_string(floctime.tm_min) + ":" + std::to_string(floctime.tm_sec)); curpos.y += 4.0f * TEXT_HEIGHT;
 
     // Sat column
 	//curpos = { 200.f + (ScreenWidth() / 2.0f), 100 };
@@ -246,12 +240,25 @@ void common2d() {
 
 	curpos.y += 2.0f * TEXT_HEIGHT;
 
-    gmtime_r(&utct, aosutctime);
-	localtime_r(&utct, aosloctime);
+    tm aosloctime;
+    tm aosutctime;
+    tm losloctime;
+    tm losutctime;
+    gmtime_r(&selsat->aos, &aosutctime);
+	localtime_r(&selsat->aos, &aosloctime);
+    gmtime_r(&selsat->los, &losutctime);
+	localtime_r(&selsat->los, &losloctime);
 
     // AOS
-    DrawString(curpos, "NEXT AOS UTC      " + std::to_string(aosutctime->tm_hour) + ":" + std::to_string(aosutctime->tm_min) + ":" + std::to_string(aosutctime->tm_sec)); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, "         LOCAL    " + std::to_string(aosloctime->tm_hour) + ":" + std::to_string(aosloctime->tm_min) + ":" + std::to_string(aosloctime->tm_sec)); curpos.y += 2.0f * TEXT_HEIGHT;
+    curpos.y += TEXT_HEIGHT;
+    DrawString(curpos, "UTC"); curpos.y += TEXT_HEIGHT;
+    DrawString(curpos, "LOCAL"); curpos.x += subcolspacing; curpos.y -= 2.0f * TEXT_HEIGHT;
+    DrawString(curpos, "AOS"); curpos.x += subcolspacing;
+    DrawString(curpos, "LOS"); curpos.x -= subcolspacing; curpos.y += TEXT_HEIGHT;
+    DrawString(curpos, std::to_string(aosutctime.tm_hour) + ":" + std::to_string(aosutctime.tm_min) + ":" + std::to_string(aosutctime.tm_sec)); curpos.x += subcolspacing;
+	DrawString(curpos, std::to_string(losutctime.tm_hour) + ":" + std::to_string(losutctime.tm_min) + ":" + std::to_string(losutctime.tm_sec)); curpos.x -= subcolspacing; curpos.y += TEXT_HEIGHT;
+    DrawString(curpos, std::to_string(aosloctime.tm_hour) + ":" + std::to_string(aosloctime.tm_min) + ":" + std::to_string(aosloctime.tm_sec)); curpos.x += subcolspacing;
+	DrawString(curpos, std::to_string(losloctime.tm_hour) + ":" + std::to_string(losloctime.tm_min) + ":" + std::to_string(losloctime.tm_sec)); curpos.x -= 2.0f * subcolspacing; curpos.y += 2.0f * TEXT_HEIGHT;
 
     // AZEL
     DrawString(curpos, "AZ"); curpos.y += TEXT_HEIGHT;
