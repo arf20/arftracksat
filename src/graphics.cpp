@@ -37,6 +37,13 @@ static float timebase = 0.0f;
 
 static bool mode = false;     // false = 2D, true = 3D
 
+static float scale_3d = 5.0f / EARTHR;
+static float rotatex = sta.geo.lat;
+//static float rotatey = 0.0f;
+static float rotatez = sta.geo.lon;
+
+#define ROT_DEG 5.0f
+
 // Primitive drawing functions
 
 void DrawLine(xyz_t a, xyz_t b, xyz_t c) {
@@ -128,6 +135,13 @@ xyz_t geoToMercator(xyz_t geo) {
 	return t;
 }
 
+xyz_t geoTo3D(xyz_t geo) {
+    xyz_t t;
+    geo = geo * TORAD;
+    xyz_geodetic_to_ecef(&geo, &t);
+    return t;
+}
+
 void DrawGeoLine(xyz_t geo1, xyz_t geo2, xyz_t c = C_WHITE) {
 	xyz_t t1 = geoToMercator(geo1);
 	xyz_t t2 = geoToMercator(geo2);
@@ -149,6 +163,29 @@ void DrawGeoShape(std::vector<xyz_t>& shape, xyz_t c = C_WHITE) {
 	    DrawGeoLine(shape[i], shape[i + 1], c);
     }
     DrawGeoLine(shape[0], shape[shape.size() - 1], c);
+}
+
+void DrawGeoLine3(xyz_t geo1, xyz_t geo2, xyz_t c = C_WHITE) {
+	xyz_t t1 = geoTo3D(geo1) * scale_3d;
+	xyz_t t2 = geoTo3D(geo2) * scale_3d;
+	DrawLine(t1, t2, c);
+}
+
+void DrawGeoLines3(std::vector<xyz_t>& lines, xyz_t c = C_WHITE) {
+    if (lines.size() == 0) return;
+    for (int i = 0; i < lines.size() - 1; i++) {
+        if (abs(lines[i + 1].lon - lines[i].lon) > 50.0f) continue;
+	    DrawGeoLine3(lines[i], lines[i + 1], c);
+    }
+}
+
+void DrawGeoShape3(std::vector<xyz_t>& shape, xyz_t c = C_WHITE) {
+    if (shape.size() == 0) return;
+    for (int i = 0; i < shape.size() - 1; i++) {
+        if (abs(shape[i + 1].lon - shape[i].lon) > 50.0f) continue;
+	    DrawGeoLine3(shape[i], shape[i + 1], c);
+    }
+    DrawGeoLine3(shape[0], shape[shape.size() - 1], c);
 }
 
 // ================== callbacks ==================
@@ -173,6 +210,30 @@ void keyboard(unsigned char key, int x, int y) {
         case 'x':   // Switch to 3D
         case 'X':
             mode = true;
+        break;
+        case 'a':
+        case 'A':
+            rotatez -= ROT_DEG;
+        break;
+        case 'd':
+        case 'D':
+            rotatez += ROT_DEG;
+        break;
+        case 'w':
+        case 'W':
+            rotatex += ROT_DEG;
+        break;
+        case 's':
+        case 'S':
+            rotatex -= ROT_DEG;
+        break;
+        case 'q':
+        case 'Q':
+            scale_3d -= 5.0f / EARTHR;
+        break;
+        case 'e':
+        case 'E':
+            scale_3d += 5.0f / EARTHR;
         break;
     }
 }
@@ -302,6 +363,8 @@ void common2d() {
     
 	DrawString(curpos, "COMPUTE TIME"); curpos.y += TEXT_HEIGHT;
 	DrawString(curpos, std::to_string(computeTime)); curpos.y += TEXT_HEIGHT;*/
+    DrawString(curpos, std::to_string(rotatex)); curpos.y += TEXT_HEIGHT;
+    DrawString(curpos, std::to_string(rotatez)); curpos.y += TEXT_HEIGHT;
 }
 
 void render2d() {
@@ -317,13 +380,6 @@ void render2d() {
 
     // Draw map                                                           
     for (shape &continent : continents) {
-        /*for (int i = 0; i < continent.points.size() - 2; i++) {
-            if ((sgn(continent.points[i].lon) != sgn(continent.points[i + 1].lon))
-                && (continent.points[i].lon > 170.0 || continent.points[i].lon < -170.0)
-                && (continent.points[i + 1].lon > 170.0 || continent.points[i + 1].lon < -170.0)) continue;
-            DrawGeoLine(continent.points[i], continent.points[i + 1]);
-        }
-        DrawGeoLine(continent.points[0], continent.points[continent.points.size() - 1]);*/
         DrawGeoShape(continent.points);
     }
     
@@ -361,15 +417,30 @@ void render2d() {
 }
 
 void render3d() {
-    /*glTranslatef(0.0f, 0.0f, -7.0f);
+    /*glScalef(scale_3d, scale_3d, scale_3d);*/
+    glTranslatef(0.0f, 0.0f, -14.0f);
+    glRotatef(rotatex - 90.0f, 1.0f, 0.0f, 0.0f);
+    //glRotatef(rotatey, 0.0f, 1.0f, 0.0f);
+    glRotatef(-rotatez - 90.0f, 0.0f, 0.0f, 1.0f);
+                                                   
+    // Draw parallels and meridians
+    float coarsestep = 20.0;
+	float finestep = 2.5;
+    for (float lon = -180.0; lon <= 180.0; lon += coarsestep) {
+        for (float lat = -90.0; lat <= 90.0; lat += finestep) {
+            DrawGeoLine3({ lon, lat, 0.0 }, { lon, lat + finestep, 0.0 }, C_BLUE);
+        }
+    }
 
-    glBegin(GL_LINES);
-    
-    glColor3f(1.0f, 0.0f, 0.0f);
-    glVertex3f(0.0f, 0.0f, 0.0f);
-    glVertex3f(1.0f, 1.0f, 1.0f);
+    for (float lat = -80.0; lat <= 70.0; lat += coarsestep) {
+        for (float lon = -180.0; lon <= 180.0; lon += finestep) {
+            DrawGeoLine3({ lon, lat, 0.0 }, { lon + finestep, lat, 0.0 }, C_BLUE);
+        }
+    }
 
-    glEnd();*/
+    for (shape &continent : continents) {
+        DrawGeoShape3(continent.points);
+    }
 }
 
 void render() {
@@ -460,6 +531,9 @@ void startGraphics() {
     GLint iNumSamples = 0;
     glGetIntegerv(GL_SAMPLE_BUFFERS, &iMultiSample);
     glGetIntegerv(GL_SAMPLES, &iNumSamples);
+
+    rotatex = sta.geo.lat;
+    rotatez = sta.geo.lon;
 
     glutMainLoop();                     // Enter the infinite event-processing loop
 }
