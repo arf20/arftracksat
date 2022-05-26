@@ -211,12 +211,11 @@ void common2d() {
 	DrawString(curpos, toString(sta.pos.z)); curpos.x -= 2.0f * subcolspacing; curpos.y += 2.0f * TEXT_HEIGHT;
 
     // now in unix time
-    time_t utct = time(NULL);
     tm futctime;
     tm floctime;
 
-    gmtime_r(&utct, &futctime);
-	localtime_r(&utct, &floctime);
+    gmtime_r(&t_now, &futctime);
+	localtime_r(&t_now, &floctime);
 
     DrawString(curpos, "TIME    UTC    " + std::to_string(futctime.tm_hour) + ":" + std::to_string(futctime.tm_min) + ":" + std::to_string(futctime.tm_sec)); curpos.y += TEXT_HEIGHT;
 	DrawString(curpos, "        LOCAL  " + std::to_string(floctime.tm_hour) + ":" + std::to_string(floctime.tm_min) + ":" + std::to_string(floctime.tm_sec)); curpos.y += 4.0f * TEXT_HEIGHT;

@@ -82,3 +82,4 @@ extern std::vector<std::string> show;
 extern std::vector<std::vector<sat>::iterator>  shownSats;
 extern std::vector<std::string> columns;
 extern int selsatidx;
+extern time_t t_now;

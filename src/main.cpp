@@ -28,6 +28,8 @@ std::vector<std::string> columns;
 
 int selsatidx = 0;     // index of shownSats
 
+time_t t_now;
+
 bool validateConfig() {
 #ifdef _WIN32
 	constexpr auto confPath = "config.json";

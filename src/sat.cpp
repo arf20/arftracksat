@@ -47,7 +47,8 @@ void loadSats(std::string tlefile) {
 	std::cout << "Satellites loaded" << std::endl;
 }
 
-void computeSats(time_t t_now) {
+void computeSats(time_t l_t_now) {
+	t_now = l_t_now;
 	for (int i = 0; i < shownSats.size(); i++) {
 		time_t t = t_now;
 		sat& sat = *shownSats[i];
