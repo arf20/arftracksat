@@ -37,6 +37,20 @@ show:           Array to only show sats by name. Leave empty to show all (possib
 columns:        Sat data to show in columns in order
                 name, azel, dis, geo, tab, pos, vel
 ```
+  
+## Controls
+```
+General
+  1-9:    Select satelite by number
+  Z:      Change view to 2D (mercator projection)
+  X:      Change view to 3D (perspective earth)
+  C:      Exit
+  
+3D view
+  A-D:    Rotate earth along poles
+  W-S:    Rotate earth along an axis through the equator, parallel to the camera
+  Q-E:    Scale up/down
+```
 
 # Where Windows?
 I just broke support lol
