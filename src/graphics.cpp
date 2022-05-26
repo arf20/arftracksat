@@ -1,3 +1,6 @@
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #include "main.hpp"
 #include "sat.hpp"
 #include "graphics.hpp"
@@ -27,6 +30,7 @@ static GLfloat height = 1;
 #define C_GREEN   {0.0f, 1.0f, 0.0f}
 #define C_BLUE    {0.0f, 0.0f, 1.0f}
 #define C_YELLOW  {1.0f, 1.0f, 0.0f}
+#define C_ORANGE  {1.0f, 0.644f, 0.0f}
 #define C_WHITE   {1.0f, 1.0f, 1.0f}
 
 static std::vector<shape> continents;
@@ -65,6 +69,69 @@ void DrawShape(std::vector<xyz_t>& shape, xyz_t pos, float scale, xyz_t c = C_WH
 	xyz_t v1{ shape[0].x, -shape[0].y };
 	xyz_t v2{ shape[shape.size() - 1].x, -shape[shape.size() - 1].y };
 	DrawLine(pos + (v1 * scale), pos + (v2 * scale), c);
+}
+
+xyz_t rot3x(xyz_t v, float theta) {
+    theta = theta * TORAD;
+    xyz_t t = {
+        v.x,
+        (v.y * cos(theta)) - (v.z * sin(theta)),
+        (v.y * sin(theta)) + (v.z * cos(theta))
+    };
+    return t;
+}
+
+xyz_t rot3y(xyz_t v, float theta) {
+    theta = theta * TORAD;
+    xyz_t t = {
+        (v.x * cos(theta)) + (v.z * sin(theta)),
+        v.y,
+        (-v.x * sin(theta)) + (v.z * cos(theta))
+    };
+    return t;
+}
+
+xyz_t rot3z(xyz_t v, float theta) {
+    theta = theta * TORAD;
+    xyz_t t = {
+        (v.x * cos(theta)) - (v.y * sin(theta)),
+        (v.x * sin(theta)) + (v.y * cos(theta)),
+        v.z
+    };
+    return t;
+}
+
+glm::vec3 orthogonalize(glm::vec3 toOrtho, glm::vec3 orthoAgainst) {
+    float bottom = (orthoAgainst.x*orthoAgainst.x)+(orthoAgainst.y*orthoAgainst.y)+(orthoAgainst.z*orthoAgainst.z);
+    float top = (toOrtho.x*orthoAgainst.x)+(toOrtho.y*orthoAgainst.y)+(toOrtho.z*orthoAgainst.z);
+    return toOrtho - top/bottom*orthoAgainst;
+}
+
+// must face camera always
+void DrawShape3(std::vector<xyz_t>& shape, xyz_t pos, float scale, xyz_t c = C_WHITE) {
+    // get model matrix
+    glm::mat4 view;
+    glGetFloatv(GL_MODELVIEW_MATRIX, (float*)&view);
+
+    // stop using GL's matrix
+    glLoadIdentity();
+    glTranslatef(0.0f, 0.0f, -14.0f);
+
+    // compute position with GL's matrix using GLM
+    glm::vec4 pos_vec(pos.x, pos.y, pos.z, 0.0f);
+    pos_vec = view * pos_vec;
+    pos = { pos_vec.x, pos_vec.y, pos_vec.z};
+
+    if (shape.size() == 0) return;
+	for (int i = 0; i < shape.size() - 1; i++) {
+		DrawLine(pos + (shape[i] * scale), pos + (shape[i + 1] * scale), c);
+	}
+
+    DrawLine(pos + (shape[0] * scale), pos + (shape[shape.size() - 1] * scale), c);
+    
+    // return to GL matrix
+    glRotatef(rotatex - 90.0f, 1.0f, 0.0f, 0.0f);
+    glRotatef(-rotatez - 90.0f, 0.0f, 0.0f, 1.0f);
 }
 
 void DrawString(xyz_t pos, std::string str, xyz_t c = C_WHITE) {
@@ -137,9 +204,10 @@ xyz_t geoToMercator(xyz_t geo) {
 
 xyz_t geoTo3D(xyz_t geo) {
     xyz_t t;
-    geo = geo * TORAD;
+    geo.lat = geo.lat * TORAD;
+    geo.lon = geo.lon * TORAD;
     xyz_geodetic_to_ecef(&geo, &t);
-    return t;
+    return t * scale_3d;
 }
 
 void DrawGeoLine(xyz_t geo1, xyz_t geo2, xyz_t c = C_WHITE) {
@@ -166,8 +234,8 @@ void DrawGeoShape(std::vector<xyz_t>& shape, xyz_t c = C_WHITE) {
 }
 
 void DrawGeoLine3(xyz_t geo1, xyz_t geo2, xyz_t c = C_WHITE) {
-	xyz_t t1 = geoTo3D(geo1) * scale_3d;
-	xyz_t t2 = geoTo3D(geo2) * scale_3d;
+	xyz_t t1 = geoTo3D(geo1);
+	xyz_t t2 = geoTo3D(geo2);
 	DrawLine(t1, t2, c);
 }
 
@@ -211,7 +279,7 @@ void keyboard(unsigned char key, int x, int y) {
         case 'X':
             mode = true;
         break;
-        case 'a':
+        case 'a':   // rotate
         case 'A':
             rotatez -= ROT_DEG;
         break;
@@ -227,13 +295,13 @@ void keyboard(unsigned char key, int x, int y) {
         case 'S':
             rotatex -= ROT_DEG;
         break;
-        case 'q':
+        case 'q':   // scale
         case 'Q':
-            scale_3d -= 5.0f / EARTHR;
+            scale_3d *= 0.9;
         break;
         case 'e':
         case 'E':
-            scale_3d += 5.0f / EARTHR;
+            scale_3d *= 1.1;
         break;
     }
 }
@@ -398,7 +466,7 @@ void render2d() {
             c = C_YELLOW;
 
             // Draw orbit for selected sat
-            DrawGeoLines(sat.geoOrbit.points, {0xff, 0xa5, 0x00});
+            DrawGeoLines(sat.geoOrbit.points, C_ORANGE);
         }
 
         // Draw AOS radius
@@ -417,7 +485,7 @@ void render2d() {
 }
 
 void render3d() {
-    /*glScalef(scale_3d, scale_3d, scale_3d);*/
+    //glScalef(scale_3d, scale_3d, scale_3d);
     glTranslatef(0.0f, 0.0f, -14.0f);
     glRotatef(rotatex - 90.0f, 1.0f, 0.0f, 0.0f);
     //glRotatef(rotatey, 0.0f, 1.0f, 0.0f);
@@ -441,6 +509,28 @@ void render3d() {
     for (shape &continent : continents) {
         DrawGeoShape3(continent.points);
     }
+
+    DrawShape3(stashape, geoTo3D(sta.geo), 0.1f, C_GREEN);
+
+    // Draw sats
+    for (int i = 0; i < shownSats.size(); i++) {
+        sat& sat = *shownSats[i];
+        xyz_t satpos = geoTo3D(sat.geo);
+
+        xyz_t c = C_RED;
+        if (i == selsatidx) {
+            c = C_YELLOW;
+
+            // Draw orbit for selected sat
+            DrawGeoLines3(sat.geoOrbit.points, C_ORANGE);
+        }
+
+        // Draw AOS radius
+        
+
+        // Draw icon
+        DrawShape3(satshape, satpos, 0.1, c);
+    }
 }
 
 void render() {
@@ -448,15 +538,22 @@ void render() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);     // Clear the color and depth buffers
 
     if (mode) { // 3D
+        // set viewport to square
+        glViewport(0, 0, height, height);
         // set perspective projection
         glMatrixMode(GL_PROJECTION);  // To operate on the Projection matrix
         glLoadIdentity();             // Reset
-        gluPerspective(45.0f, width / height, 0.1f, 100.0f);
+        gluPerspective(45.0f, height / height, 0.1f, 100.0f);
+        //glTranslatef(0.0f, 0.0f, 0.0f);
 
         // render 3D scene
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
+        //glScalef(scale_3d, scale_3d, scale_3d);
         render3d();
+
+        // reset viewport
+        glViewport(0, 0, width, height);
     }
     else {  // 2D
         // set orthogonal projection
