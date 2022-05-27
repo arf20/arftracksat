@@ -41,6 +41,9 @@ static float timebase = 0.0f;
 
 static bool mode = false;     // false = 2D, true = 3D
 
+#define SATLIST_SIZE    10
+static int selsatoff = 0;
+
 static float scale_3d = 5.0f / EARTHR;
 static float rotatex = sta.geo.lat;
 //static float rotatey = 0.0f;
@@ -259,7 +262,7 @@ void DrawGeoShape3(std::vector<xyz_t>& shape, xyz_t c = C_WHITE) {
 // ================== callbacks ==================
 
 void keyboard(unsigned char key, int x, int y) {
-    if (key >= '1' && key <= '9') {
+    if (key >= '1' && key <= '8') {
         // Select satellite 1-9
         if (key - '1' < shownSats.size())
             selsatidx = key - '1';
@@ -278,6 +281,18 @@ void keyboard(unsigned char key, int x, int y) {
         case 'x':   // Switch to 3D
         case 'X':
             mode = true;
+        break;
+        case '9':
+        if (selsatidx < shownSats.size() - 1)
+            selsatidx++;
+        if (selsatidx > selsatoff + SATLIST_SIZE - 1)
+            selsatoff++;
+        break;
+        case '0':
+        if (selsatidx > 0)
+            selsatidx--;
+        if (selsatidx < selsatoff)
+            selsatoff--;
         break;
         case 'a':   // rotate
         case 'A':
@@ -354,7 +369,8 @@ void common2d() {
 
     DrawString(curpos, "SATELLITE"); curpos.y += 2.0f * TEXT_HEIGHT;
 
-    for (int i = 0; i < shownSats.size(); i++) {
+    for (int i = selsatoff; i < shownSats.size(); i++) {
+        if (i + 1 > selsatoff + SATLIST_SIZE) break;
         auto sat = shownSats[i];
         xyz_t c = C_WHITE;
 		if (i == selsatidx) { c = C_YELLOW; }
@@ -431,8 +447,8 @@ void common2d() {
     
 	DrawString(curpos, "COMPUTE TIME"); curpos.y += TEXT_HEIGHT;
 	DrawString(curpos, std::to_string(computeTime)); curpos.y += TEXT_HEIGHT;*/
-    DrawString(curpos, std::to_string(rotatex)); curpos.y += TEXT_HEIGHT;
-    DrawString(curpos, std::to_string(rotatez)); curpos.y += TEXT_HEIGHT;
+    //DrawString(curpos, std::to_string(rotatex)); curpos.y += TEXT_HEIGHT;
+    //DrawString(curpos, std::to_string(rotatez)); curpos.y += TEXT_HEIGHT;
 }
 
 void render2d() {

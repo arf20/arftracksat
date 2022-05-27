@@ -129,20 +129,22 @@ void computeSats(time_t l_t_now) {
 		sat.aosRadiusAngle = TODEG * acos(EARTHR / (EARTHR + sat.geo.height));
 		
 
-		// Compute orbit
-		sat.geoOrbit.points.clear();
-		float orbitalPeriod = (1.0f / sat.orbit.rev) * 24.0f * 60.0f * 60.0f;
-		time_t orbitStart = t - orbitalPeriod;
-		time_t orbitEnd = t + orbitalPeriod;
-		xyz_t t_ecef;
-		xyz_t t_geo;
-		for (t = orbitStart; t <= orbitEnd; t += 60) {
-			tv.tv_sec = t; tv.tv_usec = 0;
-			sgdp4_prediction_update(&pred, &tv);	// propagate
-			sgdp4_prediction_get_ecef(&pred, &t_ecef);
-			xyz_ecef_to_geodetic(&t_ecef, &t_geo);
-			t_geo = georadtodeg(t_geo);
-			sat.geoOrbit.points.push_back(t_geo);
+		if (i == selsatidx) {
+			// Compute orbit
+			sat.geoOrbit.points.clear();
+			float orbitalPeriod = (1.0f / sat.orbit.rev) * 24.0f * 60.0f * 60.0f;
+			time_t orbitStart = t - orbitalPeriod;
+			time_t orbitEnd = t + orbitalPeriod;
+			xyz_t t_ecef;
+			xyz_t t_geo;
+			for (t = orbitStart; t <= orbitEnd; t += 60) {
+				tv.tv_sec = t; tv.tv_usec = 0;
+				sgdp4_prediction_update(&pred, &tv);	// propagate
+				sgdp4_prediction_get_ecef(&pred, &t_ecef);
+				xyz_ecef_to_geodetic(&t_ecef, &t_geo);
+				t_geo = georadtodeg(t_geo);
+				sat.geoOrbit.points.push_back(t_geo);
+			}
 		}
 
 		sgdp4_prediction_finalize(&pred);
