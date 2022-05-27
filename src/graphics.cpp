@@ -16,6 +16,7 @@ using namespace nlohmann;
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <chrono>
 
 // Globals
 
@@ -35,9 +36,7 @@ static GLfloat height = 1;
 
 static std::vector<shape> continents;
 
-static int frame = 0;
-static float startTime = 0.0f;
-static float timebase = 0.0f;
+static float timeBase = 0.0f;
 
 static bool mode = false;     // false = 2D, true = 3D
 
@@ -368,16 +367,10 @@ void keyboard(unsigned char key, int x, int y) {
 
 void common2d() {
     // Draw info
-    frame++;
-	startTime = glutGet(GLUT_ELAPSED_TIME);
-    float fps = 0.0f;
-	if (startTime - timebase > 1000) {
-		fps = frame * 1000.0f / (startTime - timebase);
-	 	timebase = startTime;
-		frame = 0;
-	}
-
-    DrawString({20, 20}, toString(fps));
+    float glTimeNow = glutGet(GLUT_ELAPSED_TIME);
+    float fps = 1 / ((glTimeNow - timeBase) / 1000.0f);
+    timeBase = glTimeNow;
+    DrawString({20, 20}, "FPS: " + toString(fps) + " COMP TIME: " + toString(computeTime.count() / 1000000.0f) + "ms");
 
 	// Station column
 	xyz_t curpos{ 200.0f + (width / 2.0f), 50.0 };

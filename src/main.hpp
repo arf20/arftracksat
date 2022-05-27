@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <cinttypes>
+#include <chrono>
 
 #include <nlohmann/json.hpp>
 using namespace nlohmann;
@@ -83,9 +84,5 @@ extern std::vector<std::vector<sat>::iterator>  shownSats;
 extern std::vector<std::string> columns;
 extern int selsatidx;
 extern time_t t_now;
-extern tm utctime;
-extern tm loctime;
-extern tm aosloctime;
-extern tm aosutctime;
-extern tm losloctime;
-extern tm losutctime;
+extern tm utctime, loctime, aosloctime, aosutctime, losloctime, losutctime;
+extern std::chrono::nanoseconds computeTime;

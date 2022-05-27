@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <fstream>
 #include <string>
+#include <chrono>
 
 #include <curl/curl.h>
 #include <curlpp/cURLpp.hpp>
@@ -35,6 +36,7 @@ tm aosloctime;
 tm aosutctime;
 tm losloctime;
 tm losutctime;
+std::chrono::nanoseconds computeTime;
 
 bool validateConfig() {
 #ifdef _WIN32

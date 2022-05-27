@@ -6,6 +6,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <chrono>
 
 std::vector<sat> sats;
 
@@ -51,6 +52,8 @@ void computeSats(time_t l_t_now) {
 	t_now = l_t_now;
 	gmtime_r(&t_now, &utctime);
 	localtime_r(&t_now, &loctime);
+
+	auto start = std::chrono::high_resolution_clock::now();
 
 	for (int i = 0; i < shownSats.size(); i++) {
 		time_t t = t_now;
@@ -159,4 +162,7 @@ void computeSats(time_t l_t_now) {
 
 		sgdp4_prediction_finalize(&pred);
 	}
+
+	auto stop = std::chrono::high_resolution_clock::now();
+	computeTime = stop - start;
 }
