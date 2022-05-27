@@ -53,7 +53,7 @@ static float rotatez = sta.geo.lon;
 
 // Primitive drawing functions
 
-void DrawLine(xyz_t a, xyz_t b, xyz_t c) {
+void DrawLine(xyz_t a, xyz_t b, xyz_t c = C_WHITE) {
     glBegin(GL_LINES);
     glColor3f(c.x, c.y, c.z);
     glVertex3f(a.x, a.y, a.z);
@@ -205,12 +205,16 @@ xyz_t geoToMercator(xyz_t geo) {
 	return t;
 }
 
-xyz_t geoTo3D(xyz_t geo) {
+xyz_t geoToECEF(xyz_t geo) {
     xyz_t t;
     geo.lat = geo.lat * TORAD;
     geo.lon = geo.lon * TORAD;
     xyz_geodetic_to_ecef(&geo, &t);
-    return t * scale_3d;
+    return t;
+}
+
+xyz_t geoTo3D(xyz_t geo) {
+    return geoToECEF(geo) * scale_3d;
 }
 
 void DrawGeoLine(xyz_t geo1, xyz_t geo2, xyz_t c = C_WHITE) {
@@ -257,6 +261,39 @@ void DrawGeoShape3(std::vector<xyz_t>& shape, xyz_t c = C_WHITE) {
 	    DrawGeoLine3(shape[i], shape[i + 1], c);
     }
     DrawGeoLine3(shape[0], shape[shape.size() - 1], c);
+}
+
+#define EARTHECC2 .006694385000 /* Eccentricity of Earth^2 */
+
+xyz_t uLat(xyz_t geo) {
+    geo.lat = geo.lat * TORAD;
+    geo.lon = geo.lon * TORAD;
+    return xyzunit(xyz_t{
+        (- EARTHR - geo.height) * cos(geo.lon) * sin(geo.lat),
+        (- EARTHR - geo.height) * sin(geo.lon) * sin(geo.lat),
+        
+        ((EARTHR * EARTHECC2 * (-EARTHECC2 + 1) * sin(geo.lat) * sin(geo.lat) * cos(geo.lat))
+        / pow(((-EARTHECC2 * sin(geo.lat) * sin(geo.lat)) + 1), 3.0f/2.0f))
+        + ((((EARTHR * (-EARTHECC2 + 1))
+        / sqrt((-EARTHECC2 * sin(geo.lat) * sin(geo.lat)) + 1)) + geo.height)
+        * cos(geo.lat))
+
+    });
+}
+
+xyz_t uLon(xyz_t geo) {
+    geo.lat = geo.lat * TORAD;
+    geo.lon = geo.lon * TORAD;
+    return xyzunit(xyz_t{
+        (- EARTHR - geo.height) * cos(geo.lat) * sin(geo.lon),
+        (EARTHR + geo.height) * cos(geo.lat) * cos(geo.lon),
+        0.0f
+    });
+}
+
+xyz_t uVert(xyz_t geo) {
+    xyz_t v = geoTo3D(geo);
+    return xyzunit(v);
 }
 
 // ================== callbacks ==================
@@ -486,8 +523,8 @@ void render2d() {
         }
 
         // Draw AOS radius
-        double finestep = 5.0;
-        for (double a = 0.0; a <= 360.0; a += finestep) {
+        float finestep = 5.0f;
+        for (float a = 0.0f; a <= 360.0f; a += finestep) {
             xyz_t p1{ sat.geo.lon + (sat.aosRadiusAngle * cos(TORAD * a)), sat.geo.lat + (sat.aosRadiusAngle * sin(TORAD * a)) };
             xyz_t p2{ sat.geo.lon + (sat.aosRadiusAngle * cos(TORAD * (a + finestep))), sat.geo.lat + (sat.aosRadiusAngle * sin(TORAD * (a + finestep))) };
             if (abs(p1.lat) > 89.0f || abs(p2.lat) > 89.0f) continue;
@@ -542,7 +579,25 @@ void render3d() {
         }
 
         // Draw AOS radius
-        
+        xyz_t geo = sat.geo;
+        geo.height = 0.0f;
+        xyz_t P = geoToECEF(geo);
+        xyz_t u_lat = uLat(geo); xyz_t u_lon = uLon(geo); xyz_t u_vert = uVert(geo);
+        float chord = 2 * EARTHR * sin(TORAD * sat.aosRadiusAngle / 2);
+        float depth = EARTHR - sqrt((EARTHR * EARTHR) - ((chord / 2) * (chord / 2)));
+        P = P - (u_vert * depth);
+
+        float finestep = 5.0f;
+        for (float i = 0.0f; i <= 360.0f; i += finestep) {
+            xyz_t v1 = (u_lon * (chord / 2) * cos(TORAD * i)) + (u_lat * (chord / 2) * sin(TORAD * i));
+            xyz_t v2 = (u_lon * (chord / 2) * cos(TORAD * (i + finestep))) + (u_lat * (chord / 2) * sin(TORAD * (i + finestep)));
+            DrawLine((P + v1) * scale_3d, (P + v2) * scale_3d, C_YELLOW);
+        }
+
+        /*DrawLine(P, P + u_lat, C_RED);
+        DrawLine(P, P + u_lon, C_RED);
+        DrawLine(P, P + u_vert, C_RED);*/
+
 
         // Draw icon
         DrawShape3(satshape, satpos, 0.1, c);
