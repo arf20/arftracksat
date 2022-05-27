@@ -1,0 +1,19 @@
+if [ "$EUID" -ne 0 ]
+  then echo "Please run as root"
+  exit
+fi
+clear && echo "This script will now proceed to install arftracksat. Are sure you want to continue?"
+read -p "[Y/N]: " result
+case $result in
+[Yy]* ) echo "Proceeding with the installation"; echo ""; sudo apt update && sudo apt install nlohmann-json3-dev libcurl4-openssl-dev libcurlpp-dev libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev; echo ""; echo "Dependencies installed successfully!"; echo "";  git clone -b graphics https://github.com/arf20/arftracksat && echo "Downloaded the source successfully"; echo ""; cd arftracksat && mkdir build && cd build && cmake .. && make && sudo make install; echo "Do you wish to add the program to PATH to execute it from anywhere in your system?";  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib && echo "Installed! You can now run arftracksat to execute the program along with the GUI. Enjoy! :)"; exit;; 
+[Nn]* ) echo "Cancelled installation"; exit;;
+*) echo "Please answer yes, no or cancel.";;
+esac
+done
+fi
+
+
+
+
+
+
