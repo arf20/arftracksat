@@ -397,17 +397,10 @@ void common2d() {
 	DrawString(curpos, "Y"); curpos.y += TEXT_HEIGHT;
 	DrawString(curpos, toString(sta.pos.y)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
 	DrawString(curpos, "Z"); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, toString(sta.pos.z)); curpos.x -= 2.0f * subcolspacing; curpos.y += 2.0f * TEXT_HEIGHT;
+	DrawString(curpos, toString(sta.pos.z)); curpos.x -= 2.0f * subcolspacing; curpos.y += 2.0f * TEXT_HEIGHT;    
 
-    // now in unix time
-    tm futctime;
-    tm floctime;
-
-    gmtime_r(&t_now, &futctime);
-	localtime_r(&t_now, &floctime);
-
-    DrawString(curpos, "TIME    UTC    " + std::to_string(futctime.tm_hour) + ":" + std::to_string(futctime.tm_min) + ":" + std::to_string(futctime.tm_sec)); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, "        LOCAL  " + std::to_string(floctime.tm_hour) + ":" + std::to_string(floctime.tm_min) + ":" + std::to_string(floctime.tm_sec)); curpos.y += 4.0f * TEXT_HEIGHT;
+    DrawString(curpos, "TIME    UTC    " + std::to_string(utctime.tm_hour) + ":" + std::to_string(utctime.tm_min) + ":" + std::to_string(utctime.tm_sec)); curpos.y += TEXT_HEIGHT;
+	DrawString(curpos, "        LOCAL  " + std::to_string(loctime.tm_hour) + ":" + std::to_string(loctime.tm_min) + ":" + std::to_string(loctime.tm_sec)); curpos.y += 4.0f * TEXT_HEIGHT;
 
     // Sat column
 	//curpos = { 200.f + (ScreenWidth() / 2.0f), 100 };
@@ -428,15 +421,6 @@ void common2d() {
     auto selsat = shownSats[selsatidx];
 
 	curpos.y += 2.0f * TEXT_HEIGHT;
-
-    tm aosloctime;
-    tm aosutctime;
-    tm losloctime;
-    tm losutctime;
-    gmtime_r(&selsat->aos, &aosutctime);
-	localtime_r(&selsat->aos, &aosloctime);
-    gmtime_r(&selsat->los, &losutctime);
-	localtime_r(&selsat->los, &losloctime);
 
     // AOS
     curpos.y += TEXT_HEIGHT;

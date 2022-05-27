@@ -49,8 +49,12 @@ void loadSats(std::string tlefile) {
 
 void computeSats(time_t l_t_now) {
 	t_now = l_t_now;
+	gmtime_r(&t_now, &utctime);
+	localtime_r(&t_now, &loctime);
+
 	for (int i = 0; i < shownSats.size(); i++) {
 		time_t t = t_now;
+		
 		sat& sat = *shownSats[i];
 		// init
 		sgdp4_prediction_t pred;
@@ -145,6 +149,12 @@ void computeSats(time_t l_t_now) {
 				t_geo = georadtodeg(t_geo);
 				sat.geoOrbit.points.push_back(t_geo);
 			}
+
+			// Set AOS LOS times
+			gmtime_r(&sat.aos, &aosutctime);
+			localtime_r(&sat.aos, &aosloctime);
+			gmtime_r(&sat.los, &losutctime);
+			localtime_r(&sat.los, &losloctime);
 		}
 
 		sgdp4_prediction_finalize(&pred);

@@ -29,6 +29,12 @@ std::vector<std::string> columns;
 int selsatidx = 0;     // index of shownSats
 
 time_t t_now;
+tm utctime;
+tm loctime;
+tm aosloctime;
+tm aosutctime;
+tm losloctime;
+tm losutctime;
 
 bool validateConfig() {
 #ifdef _WIN32
@@ -203,13 +209,8 @@ int main(int argc, char **argv) {
 		std::cout << sta.pos.x << "\t" << sta.pos.y << "\t" << sta.pos.z << "\t" << std::endl << std::endl;
 
 		// get time structs in UTC and local
-#ifdef _WIN32
-		gmtime_s(futctime, &utct);
-		localtime_s(floctime, &utct);
-#else
 		gmtime_r(&utct, futctime);
 		localtime_r(&utct, floctime);
-#endif
 
 		// print time
 		std::cout << "TIME\tUTC\t" << futctime->tm_hour << ":" << futctime->tm_min << ":" << futctime->tm_sec << std::endl
