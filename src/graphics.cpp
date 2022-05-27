@@ -213,6 +213,14 @@ xyz_t geoToECEF(xyz_t geo) {
     return t;
 }
 
+xyz_t ECEFToGeo(xyz_t pos) {
+    xyz_t t;
+    xyz_ecef_to_geodetic(&pos, &t);
+    t.lat = t.lat * TODEG;
+    t.lon = t.lon * TODEG;
+    return t;
+}
+
 xyz_t geoTo3D(xyz_t geo) {
     return geoToECEF(geo) * scale_3d;
 }
@@ -404,7 +412,7 @@ void common2d() {
     // Sat column
 	//curpos = { 200.f + (ScreenWidth() / 2.0f), 100 };
 
-    DrawString(curpos, "SATELLITE"); curpos.y += 2.0f * TEXT_HEIGHT;
+    DrawString(curpos, "SATELLITE (" + std::to_string(shownSats.size()) + ")"); curpos.y += 2.0f * TEXT_HEIGHT;
 
     for (int i = selsatoff; i < shownSats.size(); i++) {
         if (i + 1 > selsatoff + SATLIST_SIZE) break;
@@ -523,11 +531,21 @@ void render2d() {
         }
 
         // Draw AOS radius
+        xyz_t geo = sat.geo;
+        geo.height = 0.0f;
+        xyz_t P = geoToECEF(geo);
+        xyz_t u_lat = uLat(geo); xyz_t u_lon = uLon(geo); xyz_t u_vert = uVert(geo);
+        float chord = 2 * EARTHR * sin(TORAD * sat.aosRadiusAngle / 2);
+        float depth = EARTHR - sqrt((EARTHR * EARTHR) - ((chord / 2) * (chord / 2)));
+        P = P - (u_vert * depth);
+
         float finestep = 5.0f;
-        for (float a = 0.0f; a <= 360.0f; a += finestep) {
-            xyz_t p1{ sat.geo.lon + (sat.aosRadiusAngle * cos(TORAD * a)), sat.geo.lat + (sat.aosRadiusAngle * sin(TORAD * a)) };
-            xyz_t p2{ sat.geo.lon + (sat.aosRadiusAngle * cos(TORAD * (a + finestep))), sat.geo.lat + (sat.aosRadiusAngle * sin(TORAD * (a + finestep))) };
-            if (abs(p1.lat) > 89.0f || abs(p2.lat) > 89.0f) continue;
+        for (float i = 0.0f; i <= 360.0f; i += finestep) {
+            xyz_t p1 = ECEFToGeo(P + (u_lon * (chord / 2) * cos(TORAD * i)) + (u_lat * (chord / 2) * sin(TORAD * i)));
+            xyz_t p2 = ECEFToGeo(P + (u_lon * (chord / 2) * cos(TORAD * (i + finestep))) + (u_lat * (chord / 2) * sin(TORAD * (i + finestep))));
+            if (abs(p1.lat) > 85.0f || abs(p2.lat) > 85.0f) continue;
+            if (abs(p2.lon - p1.lon) > 50.0f) continue;
+            p1.height = 0.0f; p2.height = 0.0f;
             DrawGeoLine(p1, p2, c);
         }
 
@@ -563,7 +581,7 @@ void render3d() {
         DrawGeoShape3(continent.points);
     }
 
-    DrawShape3(stashape, geoTo3D(sta.geo), 0.1f, C_GREEN);
+    DrawShape3(stashape, geoTo3D(sta.geo), 0.05f, C_GREEN);
 
     // Draw sats
     for (int i = 0; i < shownSats.size(); i++) {
@@ -591,7 +609,7 @@ void render3d() {
         for (float i = 0.0f; i <= 360.0f; i += finestep) {
             xyz_t v1 = (u_lon * (chord / 2) * cos(TORAD * i)) + (u_lat * (chord / 2) * sin(TORAD * i));
             xyz_t v2 = (u_lon * (chord / 2) * cos(TORAD * (i + finestep))) + (u_lat * (chord / 2) * sin(TORAD * (i + finestep)));
-            DrawLine((P + v1) * scale_3d, (P + v2) * scale_3d, C_YELLOW);
+            DrawLine((P + v1) * scale_3d, (P + v2) * scale_3d, c);
         }
 
         /*DrawLine(P, P + u_lat, C_RED);
@@ -600,7 +618,7 @@ void render3d() {
 
 
         // Draw icon
-        DrawShape3(satshape, satpos, 0.1, c);
+        DrawShape3(satshape, satpos, 0.05, c);
     }
 }
 
