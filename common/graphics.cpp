@@ -1,11 +1,10 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "main.hpp"
 #include "sat.hpp"
 #include "graphics.hpp"
 #include "shapes.hpp"
-#include "sgdp4/sgdp4-types.h"
+#include "sgdp4/sgdp4.h"
 
 #include <GL/freeglut.h>
 #include <GL/gl.h>
@@ -17,9 +16,14 @@ using namespace nlohmann;
 #include <fstream>
 #include <vector>
 #include <chrono>
+#include <string>
 
-// Globals
+// sat.cpp exports
+tm utctime, loctime, aosloctime, aosutctime, losloctime, losutctime;
+std::chrono::nanoseconds g_computeTime;
+int g_selsatidx = 0;     // index of shownSats
 
+// File Globals
 static GLfloat width = 1;
 static GLfloat height = 1;
 
@@ -34,6 +38,9 @@ static GLfloat height = 1;
 #define C_ORANGE  {1.0f, 0.644f, 0.0f}
 #define C_WHITE   {1.0f, 1.0f, 1.0f}
 
+static std::vector<std::vector<sat>::iterator> g_shownSats;
+static station g_sta;
+
 static std::vector<shape> continents;
 
 static float timeBase = 0.0f;
@@ -44,9 +51,9 @@ static bool mode = false;     // false = 2D, true = 3D
 static int selsatoff = 0;
 
 static float scale_3d = 5.0f / EARTHR;
-static float rotatex = sta.geo.lat;
+static float rotatex;
 //static float rotatey = 0.0f;
-static float rotatez = sta.geo.lon;
+static float rotatez;
 
 #define ROT_DEG 5.0f
 
@@ -308,8 +315,8 @@ xyz_t uVert(xyz_t geo) {
 void keyboard(unsigned char key, int x, int y) {
     if (key >= '1' && key <= '8') {
         // Select satellite 1-9
-        if (key - '1' < shownSats.size())
-            selsatidx = key - '1';
+        if (key - '1' < g_shownSats.size())
+            g_selsatidx = key - '1';
         return;
     }
 
@@ -327,15 +334,15 @@ void keyboard(unsigned char key, int x, int y) {
             mode = true;
         break;
         case '9':
-        if (selsatidx < shownSats.size() - 1)
-            selsatidx++;
-        if (selsatidx > selsatoff + SATLIST_SIZE - 1)
+        if (g_selsatidx < g_shownSats.size() - 1)
+            g_selsatidx++;
+        if (g_selsatidx > selsatoff + SATLIST_SIZE - 1)
             selsatoff++;
         break;
         case '0':
-        if (selsatidx > 0)
-            selsatidx--;
-        if (selsatidx < selsatoff)
+        if (g_selsatidx > 0)
+            g_selsatidx--;
+        if (g_selsatidx < selsatoff)
             selsatoff--;
         break;
         case 'a':   // rotate
@@ -370,27 +377,27 @@ void common2d() {
     float glTimeNow = glutGet(GLUT_ELAPSED_TIME);
     float fps = 1 / ((glTimeNow - timeBase) / 1000.0f);
     timeBase = glTimeNow;
-    DrawString({20, 20}, "FPS: " + toString(fps) + " COMP TIME: " + toString(computeTime.count() / 1000000.0f) + "ms");
+    DrawString({20, 20}, "FPS: " + toString(fps) + " COMP TIME: " + toString(g_computeTime.count() / 1000000.0f) + "ms");
 
 	// Station column
 	xyz_t curpos{ 200.0f + (width / 2.0f), 50.0 };
 	float subcolspacing = 100;
 
-	DrawString(curpos, "STATION " + sta.name); curpos.y += 2.0f * TEXT_HEIGHT;
+	DrawString(curpos, "STATION " + g_sta.name); curpos.y += 2.0f * TEXT_HEIGHT;
 
 	DrawString(curpos, "LAT"); curpos.y += TEXT_HEIGHT; 
-	DrawString(curpos, toString(sta.geo.lat)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
+	DrawString(curpos, toString(g_sta.geo.lat)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
 	DrawString(curpos, "LON"); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, toString(sta.geo.lon)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
+	DrawString(curpos, toString(g_sta.geo.lon)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
 	DrawString(curpos, "HGT"); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, toString(sta.geo.height)); curpos.x -= 2.0f * subcolspacing; curpos.y += 2.0f * TEXT_HEIGHT;
+	DrawString(curpos, toString(g_sta.geo.height)); curpos.x -= 2.0f * subcolspacing; curpos.y += 2.0f * TEXT_HEIGHT;
 
 	DrawString(curpos, "X"); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, toString(sta.pos.x)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
+	DrawString(curpos, toString(g_sta.pos.x)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
 	DrawString(curpos, "Y"); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, toString(sta.pos.y)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
+	DrawString(curpos, toString(g_sta.pos.y)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
 	DrawString(curpos, "Z"); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, toString(sta.pos.z)); curpos.x -= 2.0f * subcolspacing; curpos.y += 2.0f * TEXT_HEIGHT;    
+	DrawString(curpos, toString(g_sta.pos.z)); curpos.x -= 2.0f * subcolspacing; curpos.y += 2.0f * TEXT_HEIGHT;    
 
     DrawString(curpos, "TIME    UTC    " + std::to_string(utctime.tm_hour) + ":" + std::to_string(utctime.tm_min) + ":" + std::to_string(utctime.tm_sec)); curpos.y += TEXT_HEIGHT;
 	DrawString(curpos, "        LOCAL  " + std::to_string(loctime.tm_hour) + ":" + std::to_string(loctime.tm_min) + ":" + std::to_string(loctime.tm_sec)); curpos.y += 4.0f * TEXT_HEIGHT;
@@ -398,20 +405,20 @@ void common2d() {
     // Sat column
 	//curpos = { 200.f + (ScreenWidth() / 2.0f), 100 };
 
-    DrawString(curpos, "SATELLITE (" + std::to_string(shownSats.size()) + ")"); curpos.y += 2.0f * TEXT_HEIGHT;
+    DrawString(curpos, "SATELLITE (" + std::to_string(g_shownSats.size()) + ")"); curpos.y += 2.0f * TEXT_HEIGHT;
 
-    for (int i = selsatoff; i < shownSats.size(); i++) {
+    for (int i = selsatoff; i < g_shownSats.size(); i++) {
         if (i + 1 > selsatoff + SATLIST_SIZE) break;
-        auto sat = shownSats[i];
+        auto sat = g_shownSats[i];
         xyz_t c = C_WHITE;
-		if (i == selsatidx) { c = C_YELLOW; }
+		if (i == g_selsatidx) { c = C_YELLOW; }
 
 		DrawString(curpos, std::to_string(i + 1) + ". " + sat->name, c);
 
 		curpos.y += TEXT_HEIGHT;
     }
 
-    auto selsat = shownSats[selsatidx];
+    auto selsat = g_shownSats[g_selsatidx];
 
 	curpos.y += 2.0f * TEXT_HEIGHT;
 
@@ -491,16 +498,16 @@ void render2d() {
     
 
     // Draw sta                                                            
-    xyz_t stapos = geoToMercator(sta.geo);
+    xyz_t stapos = geoToMercator(g_sta.geo);
     DrawShape(stashape, stapos, 2.5, {0.0f, 1.0f, 0.0f});
 
     // Draw sats
-    for (int i = 0; i < shownSats.size(); i++) {
-        sat& sat = *shownSats[i];
+    for (int i = 0; i < g_shownSats.size(); i++) {
+        sat& sat = *g_shownSats[i];
         xyz_t satpos = geoToMercator(sat.geo);
 
         xyz_t c = C_RED;
-        if (i == selsatidx) {
+        if (i == g_selsatidx) {
             c = C_YELLOW;
 
             // Draw orbit for selected sat
@@ -558,15 +565,15 @@ void render3d() {
         DrawGeoShape3(continent.points);
     }
 
-    DrawShape3(stashape, geoTo3D(sta.geo), 0.05f, C_GREEN);
+    DrawShape3(stashape, geoTo3D(g_sta.geo), 0.05f, C_GREEN);
 
     // Draw sats
-    for (int i = 0; i < shownSats.size(); i++) {
-        sat& sat = *shownSats[i];
+    for (int i = 0; i < g_shownSats.size(); i++) {
+        sat& sat = *g_shownSats[i];
         xyz_t satpos = geoTo3D(sat.geo);
 
         xyz_t c = C_RED;
-        if (i == selsatidx) {
+        if (i == g_selsatidx) {
             c = C_YELLOW;
 
             // Draw orbit for selected sat
@@ -662,9 +669,13 @@ void reshape(GLsizei l_width, GLsizei l_height) {
     glViewport(0, 0, width, height);
 }
 
-void startGraphics() {
+void startGraphics(std::vector<std::vector<sat>::iterator>& shownSats, station& sta, std::string mapfile) {
+    // Copy stuff to global scope
+    g_shownSats = shownSats;
+    g_sta = sta;
+
     // Load map
-    loadMap(std::string(config["mapfile"]));
+    loadMap(mapfile);
 
     // Init glut
     int argc = 0;
@@ -695,8 +706,8 @@ void startGraphics() {
     glGetIntegerv(GL_SAMPLE_BUFFERS, &iMultiSample);
     glGetIntegerv(GL_SAMPLES, &iNumSamples);
 
-    rotatex = sta.geo.lat;
-    rotatez = sta.geo.lon;
+    rotatex = g_sta.geo.lat;
+    rotatez = g_sta.geo.lon;
 
     glutMainLoop();                     // Enter the infinite event-processing loop
 }

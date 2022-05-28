@@ -18,25 +18,7 @@
 
 json config;
 
-std::string tleroot;
-
-station sta;
-
-// sat filter and column filter
-std::vector<std::string> show;
-std::vector<std::vector<sat>::iterator> shownSats;
-std::vector<std::string> columns;
-
-int selsatidx = 0;     // index of shownSats
-
-time_t t_now;
-tm utctime;
-tm loctime;
-tm aosloctime;
-tm aosutctime;
-tm losloctime;
-tm losutctime;
-std::chrono::nanoseconds computeTime;
+static std::string tleroot;
 
 bool validateConfig() {
 #ifdef _WIN32
@@ -142,8 +124,11 @@ int main(int argc, char **argv) {
 	long period = config["updatePerdiod"];	
 
 	// sat filter and column filter
+	std::vector<std::string> show;
+	std::vector<std::string> columns;
 	show = config["show"].get<std::vector<std::string>>();
 	columns = config["columns"].get<std::vector<std::string>>();
+	std::vector<std::vector<sat>::iterator> shownSats;
 
 	for (int i = 0; i < sats.size(); i++) {
 		if (show.size() == 0) {															// if show empty, shove all in
@@ -162,6 +147,7 @@ int main(int argc, char **argv) {
 	} 
 
 	// set station data
+	station sta;
 	sta.name = config["station"]["name"];
 
 	sta.geo.lat = config["station"]["lat"];
@@ -174,13 +160,15 @@ int main(int argc, char **argv) {
 	sta.vel.y = 0.0;
 	sta.vel.z = 0.0;
 
+	std::string mapfile = std::string(config["mapfile"]);
+
 	std::cout << "Setup done, entering loop..." << std::endl;
 	std::this_thread::sleep_for(std::chrono::milliseconds(1000));	// Give user time to read
 
 	// ========================= SETUP DONE =========================
 
 	// start graphics
-	std::thread graphicThread(startGraphics);
+	std::thread graphicThread(startGraphics, std::ref(shownSats), std::ref(sta), mapfile);
 	graphicThread.detach();
 
 	std::this_thread::sleep_for(std::chrono::milliseconds(1000));	// Give user time to read
@@ -188,8 +176,8 @@ int main(int argc, char **argv) {
 	std::cout << std::setprecision(1) << std::fixed;	// 2 decimal digit precision
 
 	// time structures
-	tm *futctime = new tm;
-	tm *floctime = new tm;
+	tm utctime;
+	tm loctime;
 
 	// main screen loop
 	while (true) {
@@ -202,7 +190,7 @@ int main(int argc, char **argv) {
 		// now in unix time
 		time_t utct;
 		// propagate orbits for all sats for moment now
-		computeSats(time(&utct));
+		computeSats(shownSats, sta, g_selsatidx);
 
 		// print station data
 		std::cout << "STATION\t\tLAT\tLON\tHGT\t\tX\tY\tZ" << std::endl;
@@ -211,12 +199,12 @@ int main(int argc, char **argv) {
 		std::cout << sta.pos.x << "\t" << sta.pos.y << "\t" << sta.pos.z << "\t" << std::endl << std::endl;
 
 		// get time structs in UTC and local
-		gmtime_r(&utct, futctime);
-		localtime_r(&utct, floctime);
+		gmtime_r(&utct, &utctime);
+		localtime_r(&utct, &loctime);
 
 		// print time
-		std::cout << "TIME\tUTC\t" << futctime->tm_hour << ":" << futctime->tm_min << ":" << futctime->tm_sec << std::endl
-			<< "\tLOCAL\t" << floctime->tm_hour << ":" << floctime->tm_min << ":" << floctime->tm_sec << std::endl;
+		std::cout << "TIME\tUTC\t" << utctime.tm_hour << ":" << utctime.tm_min << ":" << utctime.tm_sec << std::endl
+			<< "\tLOCAL\t" << loctime.tm_hour << ":" << loctime.tm_min << ":" << loctime.tm_sec << std::endl;
 
 		// header lines
 		std::string cl1 = "";
