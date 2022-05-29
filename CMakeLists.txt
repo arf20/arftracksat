@@ -1,10 +1,10 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.16.0)
 project(arftracksat VERSION 0.1.0)
 
 #include(CTest)
 #enable_testing()
 
-add_subdirectory(src)
+add_subdirectory(main)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
