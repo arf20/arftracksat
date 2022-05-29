@@ -1,6 +1,4 @@
-#include "main.hpp"
-#include "sat.hpp"
-#include "graphics.hpp"
+#include "main.h"
 
 #include <ctime>
 #include <thread>
@@ -9,7 +7,6 @@
 #include <filesystem>
 #include <fstream>
 #include <string>
-#include <chrono>
 
 #include <curl/curl.h>
 #include <curlpp/cURLpp.hpp>
@@ -18,9 +15,11 @@
 
 json config;
 
-static std::string tleroot;
+std::string tleroot;
 
-bool validateConfig() {
+station sta;
+
+bool checkConfig() {
 #ifdef _WIN32
 	constexpr auto confPath = "config.json";
 #else
@@ -44,7 +43,7 @@ bool validateConfig() {
 	if (config["tleroot"].type() != json::value_t::string) { std::cout << "tleroot is not a string" << std::endl; return false; }
 	tleroot = config["tleroot"];
 	if (!std::filesystem::exists(tleroot)) { 
-		std::cout << "tleroot does not exist, creating it: " << tleroot << std::endl;
+		std::cout << "tleroot does not, exist creating it: " << tleroot << std::endl;
 		if (!std::filesystem::create_directory(tleroot)) { std::cout << "error creating directory. tleroot invalid" << std::endl; return false; }
 	}
 
@@ -62,13 +61,6 @@ bool validateConfig() {
 	if (!config["station"].contains("hgt")) { std::cout << "hgt not defined in config" << std::endl; return false; }
 	if (config["station"]["hgt"].type() != json::value_t::number_float) { std::cout << "hgt is not a decimal number" << std::endl; return false; }
 
-	if (!config.contains("mapfile")) { std::cout << "mapfile not defined in config" << std::endl; return false; }
-	if (config["mapfile"].type() != json::value_t::string) { std::cout << "mapfile is not a string" << std::endl; return false; }
-	std::string mapfile = config["mapfile"];
-	if (!std::filesystem::exists(mapfile)) { 
-		std::cout << "mapfile does not exist: " << mapfile << std::endl;
-		return false;
-	}
 
 	return true;
 }
@@ -104,11 +96,12 @@ void getTLEs(std::string root, std::vector<std::string> urls) {
 	}
 }
 
+
 int main(int argc, char **argv) {
 	std::cout << "arftracksat by arf20" << std::endl;
 
 	// check json
-	if (!validateConfig()) exit(1);
+	if (!checkConfig()) exit(1);
 
 	// get tle files from celestrak
 	getTLEs(tleroot, config["tlesources"].get<std::vector<std::string>>());
@@ -128,31 +121,13 @@ int main(int argc, char **argv) {
 	std::vector<std::string> columns;
 	show = config["show"].get<std::vector<std::string>>();
 	columns = config["columns"].get<std::vector<std::string>>();
-	std::vector<std::vector<sat>::iterator> shownSats;
-
-	for (int i = 0; i < sats.size(); i++) {
-		if (show.size() == 0) {															// if show empty, shove all in
-			shownSats.push_back(sats.begin() + i);
-		}
-		else if (std::find(show.begin(), show.end(), sats[i].name) != show.end()) {		// if show not empty, shove show in
-			shownSats.push_back(sats.begin() + i);
-		} 
-	}
-
-	// if show was completely invalid, shove everything in
-	if (shownSats.size() == 0) {
-		for (int i = 0; i < sats.size(); i++) {
-			shownSats.push_back(sats.begin() + i);
-		}
-	} 
 
 	// set station data
-	station sta;
 	sta.name = config["station"]["name"];
 
 	sta.geo.lat = config["station"]["lat"];
 	sta.geo.lon = config["station"]["lon"];
-	sta.geo.height = float(config["station"]["hgt"]) / 1000.0f;
+	sta.geo.height = config["station"]["hgt"];
 
 	xyz_geodetic_to_ecef(&sta.geo, &sta.pos);
 
@@ -160,24 +135,14 @@ int main(int argc, char **argv) {
 	sta.vel.y = 0.0;
 	sta.vel.z = 0.0;
 
-	std::string mapfile = std::string(config["mapfile"]);
-
 	std::cout << "Setup done, entering loop..." << std::endl;
-	std::this_thread::sleep_for(std::chrono::milliseconds(1000));	// Give user time to read
-
-	// ========================= SETUP DONE =========================
-
-	// start graphics
-	std::thread graphicThread(startGraphics, std::ref(shownSats), std::ref(sta), mapfile);
-	graphicThread.detach();
-
 	std::this_thread::sleep_for(std::chrono::milliseconds(1000));	// Give user time to read
 
 	std::cout << std::setprecision(1) << std::fixed;	// 2 decimal digit precision
 
 	// time structures
-	tm utctime;
-	tm loctime;
+	tm *futctime = new tm;
+	tm *floctime = new tm;
 
 	// main screen loop
 	while (true) {
@@ -190,7 +155,7 @@ int main(int argc, char **argv) {
 		// now in unix time
 		time_t utct;
 		// propagate orbits for all sats for moment now
-		computeSats(shownSats, sta, g_selsatidx);
+		computeSats(time(&utct));
 
 		// print station data
 		std::cout << "STATION\t\tLAT\tLON\tHGT\t\tX\tY\tZ" << std::endl;
@@ -199,12 +164,17 @@ int main(int argc, char **argv) {
 		std::cout << sta.pos.x << "\t" << sta.pos.y << "\t" << sta.pos.z << "\t" << std::endl << std::endl;
 
 		// get time structs in UTC and local
-		gmtime_r(&utct, &utctime);
-		localtime_r(&utct, &loctime);
+#ifdef _WIN32
+		gmtime_s(futctime, &utct);
+		localtime_s(floctime, &utct);
+#else
+		gmtime_r(&utct, futctime);
+		localtime_r(&utct, floctime);
+#endif
 
 		// print time
-		std::cout << "TIME\tUTC\t" << utctime.tm_hour << ":" << utctime.tm_min << ":" << utctime.tm_sec << std::endl
-			<< "\tLOCAL\t" << loctime.tm_hour << ":" << loctime.tm_min << ":" << loctime.tm_sec << std::endl;
+		std::cout << "TIME\tUTC\t" << futctime->tm_hour << ":" << futctime->tm_min << ":" << futctime->tm_sec << std::endl
+			<< "\tLOCAL\t" << floctime->tm_hour << ":" << floctime->tm_min << ":" << floctime->tm_sec << std::endl;
 
 		// header lines
 		std::string cl1 = "";
@@ -225,8 +195,9 @@ int main(int argc, char **argv) {
 		std::cout << cl1 << std::endl << cl2 << std::endl;
 
 		// per sat loop
-		for (int i = 0; i < shownSats.size(); i++) {
-			sat& sat = *shownSats[i];
+		for (sat& sat : sats) {
+			// do only for selected sats (show)
+			if (std::find(show.begin(), show.end(), sat.name) == show.end()) continue;
 
 			// per column
 			for (std::string& col : columns) {
@@ -253,7 +224,7 @@ int main(int argc, char **argv) {
 			}
 
 			// hardcoded doppler print for debug
-			std::cout << "\t" << sat.doppler << std::endl;
+			std::cout << "\t" << sat.dopShift << std::endl;
 		}
 
 		// sleep for period

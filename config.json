@@ -1,7 +1,6 @@
 {
 	"tleroot": "/tmp/tle/",
 	"tlefile": "weather.txt",
-	"mapfile": "/usr/local/share/arftracksat/map.json",
 	
 	"tlesources": [
 		"http://celestrak.com/NORAD/elements/weather.txt",

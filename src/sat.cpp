@@ -1,14 +1,14 @@
-#include "sat.hpp"
+#include "main.h"
 
-#include "graphics.hpp"
-#include "util.hpp"
 #include "sgdp4/sgdp4.h"
 
 #include <ctime>
 #include <string>
 #include <iostream>
 #include <fstream>
-#include <chrono>
+
+#define TORAD	PI/180.0
+#define TODEG	180.0/PI
 
 std::vector<sat> sats;
 
@@ -50,23 +50,9 @@ void loadSats(std::string tlefile) {
 	std::cout << "Satellites loaded" << std::endl;
 }
 
-void computeLoop(std::vector<std::vector<sat>::iterator>& shownSats, station& sta, size_t selsatidx) {
-	while (true) {
-		computeSats(shownSats, sta, selsatidx);
-	}
-}
-
-void computeSats(std::vector<std::vector<sat>::iterator>& shownSats, station& sta, size_t selsatidx) {
-	time_t t_now = getTime();
-	gmtime_r(&t_now, &utctime);
-	localtime_r(&t_now, &loctime);
-
-	auto start = std::chrono::high_resolution_clock::now();
-
-	for (int i = 0; i < shownSats.size(); i++) {
-		time_t t = t_now;
-		
-		sat& sat = *shownSats[i];
+void computeSats(time_t t) {
+	for (sat& sat : sats) {
+		double mse;
 		// init
 		sgdp4_prediction_t pred;
 		xyz_t stageo = geodegtorad(sta.geo);
@@ -110,14 +96,14 @@ void computeSats(std::vector<std::vector<sat>::iterator>& shownSats, station& st
 		// Haversine formulae
 		double h = pow(sin((TORAD * deltaLat) / 2.0), 2)
 			+ (cos(TORAD * sta.geo.lat) * cos(TORAD * sat.geo.lat) * pow(sin((TORAD * deltaLon) / 2.0), 2));	// haversine of theta
-		double theta = 2.0 * atan2(sqrt(h), sqrt(1.0 - h));														// arc angle between 2 coords (rad)
-		double gcd = EARTHR * theta;																			// arc length
+		double theta = 2.0 * atan2(sqrt(h), sqrt(1.0 - h));															// arc angle between 2 coords (rad)
+		double gcd = EARTHR * theta;																				// arc length
 
 		// Triangle:  earth center (C), observer (O) and satellite (S)
-		double oRLen = EARTHR + sta.geo.height;																	// CO length
-		double sRLen = EARTHR + sat.geo.height;																	// CS length
+		double oRLen = EARTHR + sta.geo.height;																		// CO length
+		double sRLen = EARTHR + sat.geo.height;																		// CS length
 			
-		double osLen = sqrt(pow(oRLen, 2) + pow(sRLen, 2) - (2 * oRLen * sRLen * cos(theta)));					// OS length (missing side)
+		double osLen = sqrt(pow(oRLen, 2) + pow(sRLen, 2) - (2 * oRLen * sRLen * cos(theta)));						// OS length (missing side)
 
 		// Find CO OS angle
 		double phi = asin((sRLen * sin(theta)) / osLen);
@@ -125,51 +111,15 @@ void computeSats(std::vector<std::vector<sat>::iterator>& shownSats, station& st
 		// Elevation is that angle minus 90�
 		sat.aer.elevation = (TODEG * phi) - 90;
 
+
+
 		// Radius (range) to sat
 		sat.aer.distance = osLen;
+		// Great circle distance
+		//sat.aer.gcd = gcd;
 
-		float rVel = xyzdot(sat.vel - sta.vel, xyzunit(sat.pos - sta.pos));
-		sat.doppler = (rVel / LIGHTC) * 137500000.0;
 
-		// Find AOS & LOS within a day
-		timeval tv_aos;
-		timeval tv_los;
-		sgdp4_prediction_find_aos(&pred, &tv, 24 * 60 * 60, &tv_aos);
-		sgdp4_prediction_find_los(&pred, &tv, 24 * 60 * 60, &tv_los);
-		sat.aos = tv_aos.tv_sec;
-		sat.los = tv_los.tv_sec;
-
-		// Find AOS radius
-		sat.aosRadiusAngle = TODEG * acos(EARTHR / (EARTHR + sat.geo.height));
-		
-
-		if (i == selsatidx) {
-			// Compute orbit
-			sat.geoOrbit.points.clear();
-			float orbitalPeriod = (1.0f / sat.orbit.rev) * 24.0f * 60.0f * 60.0f;
-			time_t orbitStart = t - orbitalPeriod;
-			time_t orbitEnd = t + orbitalPeriod;
-			xyz_t t_ecef;
-			xyz_t t_geo;
-			for (t = orbitStart; t <= orbitEnd; t += 60) {
-				tv.tv_sec = t; tv.tv_usec = 0;
-				sgdp4_prediction_update(&pred, &tv);	// propagate
-				sgdp4_prediction_get_ecef(&pred, &t_ecef);
-				xyz_ecef_to_geodetic(&t_ecef, &t_geo);
-				t_geo = georadtodeg(t_geo);
-				sat.geoOrbit.points.push_back(t_geo);
-			}
-
-			// Set AOS LOS times
-			gmtime_r(&sat.aos, &aosutctime);
-			localtime_r(&sat.aos, &aosloctime);
-			gmtime_r(&sat.los, &losutctime);
-			localtime_r(&sat.los, &losloctime);
-		}
-
-		sgdp4_prediction_finalize(&pred);
+		sat.rVel = xyzdot(sat.vel - sta.vel, xyzunit(sat.pos - sta.pos));
+		sat.dopShift = (sat.rVel / LIGHTC) * 137500000.0;
 	}
-
-	auto stop = std::chrono::high_resolution_clock::now();
-	g_computeTime = stop - start;
 }
