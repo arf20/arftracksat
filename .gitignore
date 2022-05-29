@@ -3,3 +3,7 @@
 build/
 arftracksat_*/
 *.deb
+.qmake.stash
+Makefile
+*.o
+lib*

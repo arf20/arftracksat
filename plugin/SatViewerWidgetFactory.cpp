@@ -12,7 +12,7 @@ SatViewerWidgetFactory::name(void) const
 ToolWidget *
 SatViewerWidgetFactory::make(UIMediator *mediator)
 {
-  return new SatViewerWidgetFactory(this, mediator);
+  return new SatViewerWidget(this, mediator);
 }
 
 SatViewerWidgetFactory::SatViewerWidgetFactory(Suscan::Plugin *plugin) :
