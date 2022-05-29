@@ -1,5 +1,7 @@
 #include "sat.hpp"
 
+#include "graphics.hpp"
+#include "util.hpp"
 #include "sgdp4/sgdp4.h"
 
 #include <ctime>
@@ -48,8 +50,14 @@ void loadSats(std::string tlefile) {
 	std::cout << "Satellites loaded" << std::endl;
 }
 
-void computeSats(time_t l_t_now) {
-	t_now = l_t_now;
+void computeLoop(std::vector<std::vector<sat>::iterator>& shownSats, station& sta, size_t selsatidx) {
+	while (true) {
+		computeSats(shownSats, sta, selsatidx);
+	}
+}
+
+void computeSats(std::vector<std::vector<sat>::iterator>& shownSats, station& sta, size_t selsatidx) {
+	time_t t_now = getTime();
 	gmtime_r(&t_now, &utctime);
 	localtime_r(&t_now, &loctime);
 
@@ -120,7 +128,6 @@ void computeSats(time_t l_t_now) {
 		// Radius (range) to sat
 		sat.aer.distance = osLen;
 
-
 		float rVel = xyzdot(sat.vel - sta.vel, xyzunit(sat.pos - sta.pos));
 		sat.doppler = (rVel / LIGHTC) * 137500000.0;
 
@@ -164,5 +171,5 @@ void computeSats(time_t l_t_now) {
 	}
 
 	auto stop = std::chrono::high_resolution_clock::now();
-	computeTime = stop - start;
+	g_computeTime = stop - start;
 }
