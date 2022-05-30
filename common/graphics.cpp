@@ -29,8 +29,6 @@ static GLfloat height = 1;
 
 #define TEXT_HEIGHT 15
 
-#define SCL 360     // perfect for 480 height
-
 #define C_RED     {1.0f, 0.0f, 0.0f}
 #define C_GREEN   {0.0f, 1.0f, 0.0f}
 #define C_BLUE    {0.0f, 0.0f, 1.0f}
@@ -49,6 +47,10 @@ static bool mode = false;     // false = 2D, true = 3D
 
 #define SATLIST_SIZE    10
 static int selsatoff = 0;
+
+static float scale_2d = 360.0f;          // perfect for 480 height
+static float offx = 0.0f;
+static float offy = 0.0f;
 
 static float scale_3d = 5.0f / EARTHR;
 static float rotatex;
@@ -206,8 +208,10 @@ std::string toString(float n) {
 
 xyz_t geoToMercator(xyz_t geo) {
 	xyz_t t;
-	t.x = (SCL / (2.0f * PI)) * 2.0f * ((TORAD * geo.lon) + PI);
-	t.y = (SCL / (2.0f * PI)) * 2.0f * (PI - log(tan((PI / 4.0f) + ((TORAD * geo.lat) / 2.0f))));
+	t.x = (scale_2d / (2.0f * PI)) * 2.0f * ((TORAD * geo.lon) + PI);
+	t.y = (scale_2d / (2.0f * PI)) * 2.0f * (PI - log(tan((PI / 4.0f) + ((TORAD * geo.lat) / 2.0f))));
+    t.x += offx;
+    t.y += offy;
 	return t;
 }
 
@@ -347,27 +351,45 @@ void keyboard(unsigned char key, int x, int y) {
         break;
         case 'a':   // rotate
         case 'A':
-            rotatez -= ROT_DEG;
+            if (mode)
+                rotatez -= ROT_DEG;
+            else
+                offx += 20.0f;
         break;
         case 'd':
         case 'D':
-            rotatez += ROT_DEG;
+            if (mode)
+                rotatez += ROT_DEG;
+            else
+                offx -= 20.0f;
         break;
         case 'w':
         case 'W':
-            rotatex += ROT_DEG;
+            if (mode)
+                rotatex += ROT_DEG;
+            else
+                offy += 20.0f;
         break;
         case 's':
         case 'S':
-            rotatex -= ROT_DEG;
+            if (mode)
+                rotatex -= ROT_DEG;
+            else
+                offy -= 20.0f;
         break;
         case 'q':   // scale
         case 'Q':
-            scale_3d *= 0.9;
+            if (mode)
+                scale_3d *= 0.9f;
+            else
+                scale_2d *= 0.9f;
         break;
         case 'e':
         case 'E':
-            scale_3d *= 1.1;
+            if (mode)
+                scale_3d *= 1.1f;
+            else
+                scale_2d *= 1.1f;
         break;
     }
 }

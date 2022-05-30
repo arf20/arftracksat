@@ -2,4 +2,4 @@
 
 #include <ctime>
 
-time_t getTime();
+timeval getTime();

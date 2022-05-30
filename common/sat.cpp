@@ -57,14 +57,14 @@ void computeLoop(std::vector<std::vector<sat>::iterator>& shownSats, station& st
 }
 
 void computeSats(std::vector<std::vector<sat>::iterator>& shownSats, station& sta, size_t selsatidx) {
-	time_t t_now = getTime();
-	gmtime_r(&t_now, &utctime);
-	localtime_r(&t_now, &loctime);
+	timeval tv_now = getTime();
+	gmtime_r(&tv_now.tv_sec, &utctime);
+	localtime_r(&tv_now.tv_sec, &loctime);
 
 	auto start = std::chrono::high_resolution_clock::now();
 
 	for (int i = 0; i < shownSats.size(); i++) {
-		time_t t = t_now;
+		timeval t = tv_now;
 		
 		sat& sat = *shownSats[i];
 		// init
@@ -73,9 +73,7 @@ void computeSats(std::vector<std::vector<sat>::iterator>& shownSats, station& st
 		sgdp4_prediction_init(&pred, &sat.orbit, &stageo);
 
 		// propagate
-		timeval tv;
-		tv.tv_sec = t; tv.tv_usec = 0;
-		sgdp4_prediction_update(&pred, &tv);
+		sgdp4_prediction_update(&pred, &t);
 
 		// get stuff
 		sgdp4_prediction_get_ecef(&pred, &sat.pos);
@@ -134,8 +132,8 @@ void computeSats(std::vector<std::vector<sat>::iterator>& shownSats, station& st
 		// Find AOS & LOS within a day
 		timeval tv_aos;
 		timeval tv_los;
-		sgdp4_prediction_find_aos(&pred, &tv, 24 * 60 * 60, &tv_aos);
-		sgdp4_prediction_find_los(&pred, &tv, 24 * 60 * 60, &tv_los);
+		sgdp4_prediction_find_aos(&pred, &t, 24 * 60 * 60, &tv_aos);
+		sgdp4_prediction_find_los(&pred, &t, 24 * 60 * 60, &tv_los);
 		sat.aos = tv_aos.tv_sec;
 		sat.los = tv_los.tv_sec;
 
@@ -147,13 +145,12 @@ void computeSats(std::vector<std::vector<sat>::iterator>& shownSats, station& st
 			// Compute orbit
 			sat.geoOrbit.points.clear();
 			float orbitalPeriod = (1.0f / sat.orbit.rev) * 24.0f * 60.0f * 60.0f;
-			time_t orbitStart = t - orbitalPeriod;
-			time_t orbitEnd = t + orbitalPeriod;
+			time_t orbitStart = t.tv_sec - orbitalPeriod;
+			time_t orbitEnd = t.tv_sec + orbitalPeriod;
 			xyz_t t_ecef;
 			xyz_t t_geo;
-			for (t = orbitStart; t <= orbitEnd; t += 60) {
-				tv.tv_sec = t; tv.tv_usec = 0;
-				sgdp4_prediction_update(&pred, &tv);	// propagate
+			for (t.tv_sec = orbitStart; t.tv_sec <= orbitEnd; t.tv_sec += 60) {
+				sgdp4_prediction_update(&pred, &t);	// propagate
 				sgdp4_prediction_get_ecef(&pred, &t_ecef);
 				xyz_ecef_to_geodetic(&t_ecef, &t_geo);
 				t_geo = georadtodeg(t_geo);

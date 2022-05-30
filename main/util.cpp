@@ -1,7 +1,9 @@
 #include "../common/util.hpp"
 
-#include <ctime>
+#include <sys/time.h>
 
-time_t getTime() {
-    return time(NULL);
+timeval getTime() {
+    timeval tv;
+    gettimeofday(&tv, NULL);
+    return tv;
 }

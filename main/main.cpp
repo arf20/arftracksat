@@ -1,4 +1,4 @@
-#include "main.hpp"
+#include "sgdp4/sgdp4.h"
 #include "sat.hpp"
 #include "graphics.hpp"
 
@@ -10,11 +10,17 @@
 #include <fstream>
 #include <string>
 #include <chrono>
+#include <vector>
+#include <cinttypes>
+
 
 #include <curl/curl.h>
 #include <curlpp/cURLpp.hpp>
 #include <curlpp/Easy.hpp>
 #include <curlpp/Options.hpp>
+
+#include <nlohmann/json.hpp>
+using namespace nlohmann;
 
 json config;
 
@@ -107,11 +113,22 @@ void getTLEs(std::string root, std::vector<std::string> urls) {
 int main(int argc, char **argv) {
 	std::cout << "arftracksat by arf20" << std::endl;
 
+	bool noGraphics = false;
+	bool noDownload = false;
+	bool noPrint = false;
+	for (int i = 0; i < argc; i++) {
+		if (std::string(argv[i]) == "--no-graphics") noGraphics = true;
+		if (std::string(argv[i]) == "--no-download") noDownload = true;
+		if (std::string(argv[i]) == "--no-print") noPrint = true;
+
+	}
+
 	// check json
 	if (!validateConfig()) exit(1);
 
 	// get tle files from celestrak
-	getTLEs(tleroot, config["tlesources"].get<std::vector<std::string>>());
+	if (!noDownload)
+		getTLEs(tleroot, config["tlesources"].get<std::vector<std::string>>());
 
 	// check existance of tle
 	if (!checkTLE()) exit(1);
@@ -124,10 +141,8 @@ int main(int argc, char **argv) {
 	long period = config["updatePerdiod"];	
 
 	// sat filter and column filter
-	std::vector<std::string> show;
-	std::vector<std::string> columns;
-	show = config["show"].get<std::vector<std::string>>();
-	columns = config["columns"].get<std::vector<std::string>>();
+	std::vector<std::string> show = config["show"].get<std::vector<std::string>>();
+	std::vector<std::string> columns = config["columns"].get<std::vector<std::string>>();
 	std::vector<std::vector<sat>::iterator> shownSats;
 
 	for (int i = 0; i < sats.size(); i++) {
@@ -168,8 +183,10 @@ int main(int argc, char **argv) {
 	// ========================= SETUP DONE =========================
 
 	// start graphics
-	std::thread graphicThread(startGraphics, std::ref(shownSats), std::ref(sta), mapfile);
-	graphicThread.detach();
+	if (!noGraphics) {
+		std::thread graphicThread(startGraphics, std::ref(shownSats), std::ref(sta), mapfile);
+		graphicThread.detach();
+	}
 
 	std::this_thread::sleep_for(std::chrono::milliseconds(1000));	// Give user time to read
 
@@ -182,15 +199,19 @@ int main(int argc, char **argv) {
 	// main screen loop
 	while (true) {
 		// clear screen
-#ifdef _WIN32
-		system("cls");
-#else
-		std::cout << "\x1B[2J\x1B[H";
-#endif
+		if (!noPrint) {
+			std::cout << "\x1B[2J\x1B[H";
+		}
+
+		// sleep for period
+		std::this_thread::sleep_for(std::chrono::milliseconds(period));
+
 		// now in unix time
 		time_t utct;
 		// propagate orbits for all sats for moment now
 		computeSats(shownSats, sta, g_selsatidx);
+
+		if (noPrint) continue;
 
 		// print station data
 		std::cout << "STATION\t\tLAT\tLON\tHGT\t\tX\tY\tZ" << std::endl;
@@ -255,9 +276,6 @@ int main(int argc, char **argv) {
 			// hardcoded doppler print for debug
 			std::cout << "\t" << sat.doppler << std::endl;
 		}
-
-		// sleep for period
-		std::this_thread::sleep_for(std::chrono::milliseconds(period));
 	}
 
 	// never reached ;)
