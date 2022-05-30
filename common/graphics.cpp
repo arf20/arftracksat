@@ -354,42 +354,42 @@ void keyboard(unsigned char key, int x, int y) {
             if (mode)
                 rotatez -= ROT_DEG;
             else
-                offx += 20.0f;
+                offx += 30.0f;
         break;
         case 'd':
         case 'D':
             if (mode)
                 rotatez += ROT_DEG;
             else
-                offx -= 20.0f;
+                offx -= 30.0f;
         break;
         case 'w':
         case 'W':
             if (mode)
                 rotatex += ROT_DEG;
             else
-                offy += 20.0f;
+                offy += 30.0f;
         break;
         case 's':
         case 'S':
             if (mode)
                 rotatex -= ROT_DEG;
             else
-                offy -= 20.0f;
+                offy -= 30.0f;
         break;
         case 'q':   // scale
         case 'Q':
             if (mode)
-                scale_3d *= 0.9f;
+                scale_3d *= 1.1f;
             else
-                scale_2d *= 0.9f;
+                scale_2d *= 1.1f;
         break;
         case 'e':
         case 'E':
             if (mode)
-                scale_3d *= 1.1f;
+                scale_3d *= 0.9f;
             else
-                scale_2d *= 1.1f;
+                scale_2d *= 0.9f;
         break;
     }
 }
@@ -399,7 +399,8 @@ void common2d() {
     float glTimeNow = glutGet(GLUT_ELAPSED_TIME);
     float fps = 1 / ((glTimeNow - timeBase) / 1000.0f);
     timeBase = glTimeNow;
-    DrawString({20, 20}, "FPS: " + toString(fps) + " COMP TIME: " + toString(g_computeTime.count() / 1000000.0f) + "ms");
+    std::string modestr = mode ? "PERSPECTIVE" : "MERCATOR";
+    DrawString({20, 20}, "FPS: " + toString(fps) + "  COMP TIME: " + toString(g_computeTime.count() / 1000000.0f) + "ms  MODE: " + modestr);
 
 	// Station column
 	xyz_t curpos{ 200.0f + (width / 2.0f), 50.0 };
