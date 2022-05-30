@@ -76,6 +76,15 @@ bool validateConfig() {
 		return false;
 	}
 
+	if (!config.contains("objfile")) { std::cout << "objfile not defined in config" << std::endl; return false; }
+	if (config["objfile"].type() != json::value_t::string) { std::cout << "objfile is not a string" << std::endl; return false; }
+	std::string objfile = config["objfile"];
+	if (!std::filesystem::exists(objfile)) { 
+		std::cout << "objfile does not exist: " << objfile << std::endl;
+		return false;
+	}
+
+
 	return true;
 }
 
@@ -176,6 +185,7 @@ int main(int argc, char **argv) {
 	sta.vel.z = 0.0;
 
 	std::string mapfile = std::string(config["mapfile"]);
+	std::string objfile = std::string(config["objfile"]);
 
 	std::cout << "Setup done, entering loop..." << std::endl;
 	std::this_thread::sleep_for(std::chrono::milliseconds(1000));	// Give user time to read
@@ -184,7 +194,7 @@ int main(int argc, char **argv) {
 
 	// start graphics
 	if (!noGraphics) {
-		std::thread graphicThread(startGraphics, std::ref(shownSats), std::ref(sta), mapfile);
+		std::thread graphicThread(startGraphics, std::ref(shownSats), std::ref(sta), mapfile, objfile);
 		graphicThread.detach();
 	}
 

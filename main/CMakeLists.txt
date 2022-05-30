@@ -23,8 +23,11 @@ set(MAIN_SRC
     "util.cpp"
     "main.cpp")
 
-set(CONFJSON ../config.json)
-set(MAPFILE ../map.json)
+set(CONFJSON "../config.json")
+set(ASSETS "../assets/map.json"
+    "../assets/earth.obj"
+    "../assets/earth.mtl"
+    )
 
 set(SOURCE_FILES ${SGPD4_SRC} ${COMMON_SRC} ${MAIN_SRC})
 set(CMAKE_DEFAULT_PROJECT_FILE main.cpp)
@@ -35,4 +38,4 @@ target_link_libraries(arftracksat pthread curl curlpp dl GL GLU glut)
 
 install(TARGETS arftracksat RUNTIME DESTINATION bin)
 install(FILES ${CONFJSON} DESTINATION etc/arftracksat/)
-install(FILES ${MAPFILE} DESTINATION share/arftracksat/)
+install(FILES ${ASSETS} DESTINATION share/arftracksat/)

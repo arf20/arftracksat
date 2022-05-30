@@ -9,6 +9,9 @@
 #include <GL/freeglut.h>
 #include <GL/gl.h>
 
+#define TINYOBJLOADER_IMPLEMENTATION
+#include "tiny_obj_loader.h"
+
 #include <nlohmann/json.hpp>
 using namespace nlohmann;
 
@@ -17,6 +20,7 @@ using namespace nlohmann;
 #include <vector>
 #include <chrono>
 #include <string>
+#include <filesystem>
 
 // sat.cpp exports
 tm utctime, loctime, aosloctime, aosutctime, losloctime, losutctime;
@@ -39,7 +43,13 @@ static GLfloat height = 1;
 static std::vector<std::vector<sat>::iterator> g_shownSats;
 static station g_sta;
 
+// lat/lon shapes
 static std::vector<shape> continents;
+
+// 3D assets
+tinyobj::attrib_t earth_attrib;
+std::vector<tinyobj::shape_t> earth_shapes;
+std::vector<tinyobj::material_t> earth_materials;
 
 static float timeBase = 0.0f;
 
@@ -53,6 +63,7 @@ static float offx = 0.0f;
 static float offy = 0.0f;
 
 static float scale_3d = 5.0f / EARTHR;
+static float scale_model = EARTHR / 100.0f;
 static float rotatex;
 //static float rotatey = 0.0f;
 static float rotatez;
@@ -195,6 +206,29 @@ bool loadMap(std::string mapfilepath) {
 	return true;
 }
 
+void loadEarth(std::string& objpath) {
+    std::filesystem::path path(objpath);
+    tinyobj::ObjReaderConfig reader_config;
+    reader_config.mtl_search_path = path.parent_path(); // Path to material files
+
+    tinyobj::ObjReader reader;
+
+    if (!reader.ParseFromFile(objpath, reader_config)) {
+        if (!reader.Error().empty()) {
+            std::cerr << "TinyObjReader: " << reader.Error();
+        }
+        exit(1);
+    }
+
+    if (!reader.Warning().empty()) {
+        std::cout << "TinyObjReader: " << reader.Warning();
+    }
+
+    earth_attrib = reader.GetAttrib();
+    earth_shapes = reader.GetShapes();
+    earth_materials = reader.GetMaterials();
+}
+
 template <typename T> int sgn(T val) {
 	return (T(0) < val) - (val < T(0));
 }
@@ -279,6 +313,70 @@ void DrawGeoShape3(std::vector<xyz_t>& shape, xyz_t c = C_WHITE) {
 	    DrawGeoLine3(shape[i], shape[i + 1], c);
     }
     DrawGeoLine3(shape[0], shape[shape.size() - 1], c);
+}
+
+void DrawEarth3() {
+// Loop over shapes
+    glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
+    //glRotatef(rotatex - 90.0f, 1.0f, 0.0f, 0.0f);
+
+    for (size_t s = 0; s < earth_shapes.size(); s++) {
+        glBegin(GL_TRIANGLES);
+
+        //glColor3f(1.0f, 1.0f, 1.0f);
+
+        // Loop over faces(polygon)
+        size_t index_offset = 0;
+        for (size_t f = 0; f < earth_shapes[s].mesh.num_face_vertices.size(); f++) {
+            // per-face material
+            int material = earth_shapes[s].mesh.material_ids[f];
+            if (material == 0) glColor3f(0.0f, 0.0f, 1.0f);
+            if (material == 1) glColor3f(0.0f, 1.0f, 0.0f);
+            if (material == 2) glColor3f(1.0f, 1.0f, 1.0f);
+            //std::cout << material << std::endl;
+
+            size_t fv = size_t(earth_shapes[s].mesh.num_face_vertices[f]);
+
+            // Loop over vertices in the face.
+            for (size_t v = 0; v < fv; v++) {
+                tinyobj::index_t idx = earth_shapes[s].mesh.indices[index_offset + v];  // vertex idx
+
+                // vertex colors
+                tinyobj::real_t red   = earth_attrib.colors[3*size_t(idx.vertex_index)+0];
+                tinyobj::real_t green = earth_attrib.colors[3*size_t(idx.vertex_index)+1];
+                tinyobj::real_t blue  = earth_attrib.colors[3*size_t(idx.vertex_index)+2];
+
+                // draw color
+                //glColor3f(red, green, blue);
+
+                // access to vertex
+                tinyobj::real_t vx = earth_attrib.vertices[3*size_t(idx.vertex_index)+0];
+                tinyobj::real_t vy = earth_attrib.vertices[3*size_t(idx.vertex_index)+1];
+                tinyobj::real_t vz = earth_attrib.vertices[3*size_t(idx.vertex_index)+2];
+
+                // draw triangle
+                glVertex3f(vx * scale_model * scale_3d, vy * scale_model * scale_3d, vz * scale_model * scale_3d);
+
+                // Check if 'normal_index' is zero or positive. negative = no normal data
+                if (idx.normal_index >= 0) {
+                    tinyobj::real_t nx = earth_attrib.normals[3*size_t(idx.normal_index)+0];
+                    tinyobj::real_t ny = earth_attrib.normals[3*size_t(idx.normal_index)+1];
+                    tinyobj::real_t nz = earth_attrib.normals[3*size_t(idx.normal_index)+2];
+                }
+
+                // Check if 'texcoord_index' is zero or positive. negative = no texcoord data
+                if (idx.texcoord_index >= 0) {
+                    tinyobj::real_t tx = earth_attrib.texcoords[2*size_t(idx.texcoord_index)+0];
+                    tinyobj::real_t ty = earth_attrib.texcoords[2*size_t(idx.texcoord_index)+1];
+                }
+            }
+            index_offset += fv;
+        }
+
+        glEnd();
+    }
+
+    glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
 }
 
 #define EARTHECC2 .006694385000 /* Eccentricity of Earth^2 */
@@ -568,9 +666,11 @@ void render3d() {
     glRotatef(rotatex - 90.0f, 1.0f, 0.0f, 0.0f);
     //glRotatef(rotatey, 0.0f, 1.0f, 0.0f);
     glRotatef(-rotatez - 90.0f, 0.0f, 0.0f, 1.0f);
-                                                   
+
+    DrawEarth3();
+
     // Draw parallels and meridians
-    float coarsestep = 20.0;
+    /*float coarsestep = 20.0;
 	float finestep = 2.5;
     for (float lon = -180.0; lon <= 180.0; lon += coarsestep) {
         for (float lat = -90.0; lat <= 90.0; lat += finestep) {
@@ -582,11 +682,12 @@ void render3d() {
         for (float lon = -180.0; lon <= 180.0; lon += finestep) {
             DrawGeoLine3({ lon, lat, 0.0 }, { lon + finestep, lat, 0.0 }, C_BLUE);
         }
-    }
+    }*/
 
-    for (shape &continent : continents) {
+    // Draw wireframe earth
+    /*for (shape &continent : continents) {
         DrawGeoShape3(continent.points);
-    }
+    }*/
 
     DrawShape3(stashape, geoTo3D(g_sta.geo), 0.05f, C_GREEN);
 
@@ -692,13 +793,15 @@ void reshape(GLsizei l_width, GLsizei l_height) {
     glViewport(0, 0, width, height);
 }
 
-void startGraphics(std::vector<std::vector<sat>::iterator>& shownSats, station& sta, std::string mapfile) {
+void startGraphics(std::vector<std::vector<sat>::iterator>& shownSats, station& sta, std::string mapfile, std::string objfile) {
     // Copy stuff to global scope
     g_shownSats = shownSats;
     g_sta = sta;
 
     // Load map
     loadMap(mapfile);
+    // Load 3D earth
+    loadEarth(objfile);
 
     // Init glut
     int argc = 0;
