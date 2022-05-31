@@ -40,6 +40,10 @@ static GLfloat height = 1;
 #define C_ORANGE  {1.0f, 0.644f, 0.0f}
 #define C_WHITE   {1.0f, 1.0f, 1.0f}
 
+#define C_OCEAN   0.0f, 0.129f, 0.278f
+#define C_LAND    0.207f, 0.368f, 0.231f
+#define C_ANT     0.541f, 0.498f, 0.502f
+
 static std::vector<std::vector<sat>::iterator> g_shownSats;
 static station g_sta;
 
@@ -330,8 +334,8 @@ void DrawEarth3() {
         for (size_t f = 0; f < earth_shapes[s].mesh.num_face_vertices.size(); f++) {
             // per-face material
             int material = earth_shapes[s].mesh.material_ids[f];
-            if (material == 0) glColor3f(0.0f, 0.0f, 1.0f);
-            if (material == 1) glColor3f(0.0f, 1.0f, 0.0f);
+            if (material == 0) glColor3f(C_OCEAN);
+            if (material == 1) glColor3f(C_LAND);
             if (material == 2) glColor3f(1.0f, 1.0f, 1.0f);
             //std::cout << material << std::endl;
 
@@ -342,12 +346,12 @@ void DrawEarth3() {
                 tinyobj::index_t idx = earth_shapes[s].mesh.indices[index_offset + v];  // vertex idx
 
                 // vertex colors
-                tinyobj::real_t red   = earth_attrib.colors[3*size_t(idx.vertex_index)+0];
+                /*tinyobj::real_t red   = earth_attrib.colors[3*size_t(idx.vertex_index)+0];
                 tinyobj::real_t green = earth_attrib.colors[3*size_t(idx.vertex_index)+1];
                 tinyobj::real_t blue  = earth_attrib.colors[3*size_t(idx.vertex_index)+2];
 
                 // draw color
-                //glColor3f(red, green, blue);
+                //glColor3f(red, green, blue);*/
 
                 // access to vertex
                 tinyobj::real_t vx = earth_attrib.vertices[3*size_t(idx.vertex_index)+0];
@@ -357,7 +361,7 @@ void DrawEarth3() {
                 // draw triangle
                 glVertex3f(vx * scale_model * scale_3d, vy * scale_model * scale_3d, vz * scale_model * scale_3d);
 
-                // Check if 'normal_index' is zero or positive. negative = no normal data
+                /*// Check if 'normal_index' is zero or positive. negative = no normal data
                 if (idx.normal_index >= 0) {
                     tinyobj::real_t nx = earth_attrib.normals[3*size_t(idx.normal_index)+0];
                     tinyobj::real_t ny = earth_attrib.normals[3*size_t(idx.normal_index)+1];
@@ -368,7 +372,7 @@ void DrawEarth3() {
                 if (idx.texcoord_index >= 0) {
                     tinyobj::real_t tx = earth_attrib.texcoords[2*size_t(idx.texcoord_index)+0];
                     tinyobj::real_t ty = earth_attrib.texcoords[2*size_t(idx.texcoord_index)+1];
-                }
+                }*/
             }
             index_offset += fv;
         }
@@ -711,7 +715,7 @@ void render3d() {
         xyz_t u_lat = uLat(geo); xyz_t u_lon = uLon(geo); xyz_t u_vert = uVert(geo);
         float chord = 2 * EARTHR * sin(TORAD * sat.aosRadiusAngle / 2);
         float depth = EARTHR - sqrt((EARTHR * EARTHR) - ((chord / 2) * (chord / 2)));
-        P = P - (u_vert * depth);
+        P = (P - (u_vert * depth)) + (u_vert * 20.0f);
 
         float finestep = 5.0f;
         for (float i = 0.0f; i <= 360.0f; i += finestep) {
