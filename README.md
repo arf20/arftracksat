@@ -39,6 +39,9 @@ show:           Array to only show sats by name. Leave empty to show all (possib
 columns:        Sat data to show in columns in order
                 name, azel, dis, geo, tab, pos, vel
 ```
+
+## Troubleshooting
+If arftracksat fails with "No sats", the TLE file contains no TLEs. Likely the TLE server (i.e. celestrack) returned a redirect or something.
   
 ## Controls
 ```

@@ -543,7 +543,7 @@ void common2d() {
 		curpos.y += TEXT_HEIGHT;
     }
 
-    auto selsat = g_shownSats[g_selsatidx];
+    std::vector<sat>::iterator selsat = g_shownSats[g_selsatidx];
 
 	curpos.y += 2.0f * TEXT_HEIGHT;
 

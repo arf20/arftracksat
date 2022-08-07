@@ -154,6 +154,11 @@ int main(int argc, char **argv) {
 	std::vector<std::string> columns = config["columns"].get<std::vector<std::string>>();
 	std::vector<std::vector<sat>::iterator> shownSats;
 
+	if (sats.size() == 0) {
+		std::cout << "No sats" << std::endl;
+		exit(1);
+	}
+
 	for (int i = 0; i < sats.size(); i++) {
 		if (show.size() == 0) {															// if show empty, shove all in
 			shownSats.push_back(sats.begin() + i);
