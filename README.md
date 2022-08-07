@@ -51,6 +51,9 @@ cd /usr/local/etc/arftracksat/
 arftracksat
 ```
 
+## Troubleshooting
+If no sats are found in the TLE, celestrack (or similar) probably returned no TLEs but rather a redirect or something like that instead.
+
 # Where Windows?
 I just broke support lol
 Old VS project in my personal repos: https://arf20.com/source/arftracksat (it sucks)
