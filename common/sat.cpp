@@ -89,42 +89,28 @@ void computeSats(std::vector<std::vector<sat>::iterator>& shownSats, station& st
 			sat.geo.lon = sat.geo.lon - 360.0;
 
 		// == AZ ==
-		// Difference in coords
-		double deltaLat = sat.geo.lat - sta.geo.lat;
-		double deltaLon = sat.geo.lon - sta.geo.lon;
+		xyz_t u_lat = uLat(sta.geo); xyz_t u_lon = uLon(sta.geo); xyz_t u_vert = uVert(sta.geo);
+		xyz_t osDistanceV = sat.pos - sta.pos;
 
-		// Formulae for azimuth
-		sat.aer.azimuth = TODEG * atan2(
-			sin(TORAD * deltaLon) * cos(TORAD * sat.geo.lat),
-			(cos(TORAD * sta.geo.lat) * sin(TORAD * sat.geo.lat) - (sin(TORAD * sta.geo.lat) * cos(TORAD * sat.geo.lat) * cos(TORAD * deltaLon)))
-		);
+		double azX = xyzdot(u_lon, osDistanceV);
+		double azY = xyzdot(u_lat, osDistanceV);
+
+		double theta = TODEG * atan2(azY, azX);
 
 		// Correct negative azimuths
-		while (sat.aer.azimuth < 0.0)
-			sat.aer.azimuth += 360.0;
+		while (theta < 0.0)
+			theta += 360.0;
 
+		sat.aer.azimuth = theta;
 
 		// == EL ==
-		// Haversine formulae
-		double h = pow(sin((TORAD * deltaLat) / 2.0), 2)
-			+ (cos(TORAD * sta.geo.lat) * cos(TORAD * sat.geo.lat) * pow(sin((TORAD * deltaLon) / 2.0), 2));	// haversine of theta
-		double theta = 2.0 * atan2(sqrt(h), sqrt(1.0 - h));														// arc angle between 2 coords (rad)
-		double gcd = EARTHR * theta;																			// arc length
+		double phi = acos(xyzdot(u_vert, osDistanceV) / (xyzmod(u_vert) * xyzmod(osDistanceV)));
 
-		// Triangle:  earth center (C), observer (O) and satellite (S)
-		double oRLen = EARTHR + sta.geo.height;																	// CO length
-		double sRLen = EARTHR + sat.geo.height;																	// CS length
-			
-		double osLen = sqrt(pow(oRLen, 2) + pow(sRLen, 2) - (2 * oRLen * sRLen * cos(theta)));					// OS length (missing side)
-
-		// Find CO OS angle
-		double phi = asin((sRLen * sin(theta)) / osLen);
-
-		// Elevation is that angle minus 90�
-		sat.aer.elevation = (TODEG * phi) - 90;
+		// Elevation is 
+		sat.aer.elevation = 90.0 - (TODEG * phi);
 
 		// Radius (range) to sat
-		sat.aer.distance = osLen;
+		sat.aer.distance = xyzmod(osDistanceV);
 
 		float rVel = xyzdot(sat.vel - sta.vel, xyzunit(sat.pos - sta.pos));
 		sat.doppler = (rVel / LIGHTC) * 137500000.0;

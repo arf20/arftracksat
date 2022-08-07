@@ -183,7 +183,10 @@ int main(int argc, char **argv) {
 	sta.geo.lon = config["station"]["lon"];
 	sta.geo.height = float(config["station"]["hgt"]) / 1000.0f;
 
-	xyz_geodetic_to_ecef(&sta.geo, &sta.pos);
+	xyz_t sta_geo_rad = sta.geo;
+	sta_geo_rad.lat *= TORAD;
+	sta_geo_rad.lon *= TORAD;
+	xyz_geodetic_to_ecef(&sta_geo_rad, &sta.pos);
 
 	sta.vel.x = 0.0;
 	sta.vel.y = 0.0;

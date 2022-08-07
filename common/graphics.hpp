@@ -14,3 +14,7 @@ extern tm utctime, loctime, aosloctime, aosutctime, losloctime, losutctime;
 extern std::chrono::nanoseconds g_computeTime;
 extern int g_selsatidx;     // index of shownSats
 void startGraphics(std::vector<std::vector<sat>::iterator>& shownSats, station& sta, std::string mapfile, std::string objfile);
+
+xyz_t uLat(xyz_t geo);
+xyz_t uLon(xyz_t geo);
+xyz_t uVert(xyz_t geo);
