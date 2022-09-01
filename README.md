@@ -1,7 +1,7 @@
 # arftracksat: A (no longer CLI only) satellite tracking software for linux
 SGDP-4 adaptation shamelessly copied from BatchDrake's suscan.
 
-![arftracksat](https://user-images.githubusercontent.com/35542215/187993399-e2329278-994e-4427-a14b-e99fd5a3afe2.JPG)
+![arftracksat](https://user-images.githubusercontent.com/35542215/187993716-356f1ce6-88f8-4734-b260-4ac9b984f914.PNG)
 
 ## Building
 Install dependencies
