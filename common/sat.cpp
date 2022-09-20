@@ -92,10 +92,10 @@ void computeSats(std::vector<std::vector<sat>::iterator>& shownSats, station& st
 		xyz_t u_lat = uLat(sta.geo); xyz_t u_lon = uLon(sta.geo); xyz_t u_vert = uVert(sta.geo);
 		xyz_t osDistanceV = sat.pos - sta.pos;
 
-		double azX = xyzdot(u_lon, osDistanceV);
-		double azY = xyzdot(u_lat, osDistanceV);
+		double azO = xyzdot(u_lon, osDistanceV);
+		double azC = xyzdot(u_lat, osDistanceV);
 
-		double theta = TODEG * atan2(azY, azX);
+		double theta = TODEG * atan2(azO, azC);
 
 		// Correct negative azimuths
 		while (theta < 0.0)
@@ -104,7 +104,7 @@ void computeSats(std::vector<std::vector<sat>::iterator>& shownSats, station& st
 		sat.aer.azimuth = theta;
 
 		// == EL ==
-		double phi = acos(xyzdot(u_vert, osDistanceV) / (xyzmod(u_vert) * xyzmod(osDistanceV)));
+		double phi = acos(xyzdot(u_vert, osDistanceV) / xyzmod(osDistanceV));
 
 		// Elevation is 
 		sat.aer.elevation = 90.0 - (TODEG * phi);

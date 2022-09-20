@@ -543,7 +543,7 @@ void common2d() {
 		curpos.y += TEXT_HEIGHT;
     }
 
-    std::vector<sat>::iterator selsat = g_shownSats[g_selsatidx];
+    auto selsat = g_shownSats[g_selsatidx];
 
 	curpos.y += 2.0f * TEXT_HEIGHT;
 
@@ -693,20 +693,12 @@ void render3d() {
         DrawGeoShape3(continent.points);
     }*/
 
-    //DrawShape3(stashape, geoTo3D(g_sta.geo), 0.05f, C_GREEN);
-    DrawShape3(stashape, g_sta.pos * scale_3d, 0.05f, C_GREEN);
-
-    xyz_t u_lat = uLat(g_sta.geo); xyz_t u_lon = uLon(g_sta.geo); xyz_t u_vert = uVert(g_sta.geo);
-    //xyz_t asdf = geoTo3D(g_sta.geo);
-    /*DrawLine(asdf, asdf + (u_lat * 1000.0), C_BLUE);
-    DrawLine(asdf, asdf + (u_lon * 1000.0), C_BLUE);
-    DrawLine(asdf, asdf + (u_vert * 1000.0), C_BLUE);*/
-
+    DrawShape3(stashape, geoTo3D(g_sta.geo), 0.05f, C_GREEN);
 
     // Draw sats
     for (int i = 0; i < g_shownSats.size(); i++) {
         sat& sat = *g_shownSats[i];
-        //xyz_t satpos = geoTo3D(sat.geo);
+        xyz_t satpos = geoTo3D(sat.geo);
 
         xyz_t c = C_RED;
         if (i == g_selsatidx) {
@@ -714,11 +706,6 @@ void render3d() {
 
             // Draw orbit for selected sat
             DrawGeoLines3(sat.geoOrbit.points, C_ORANGE);
-
-            //xyz_t osDistanceV = sat.pos - g_sta.pos;
-
-            //DrawLine(g_sta.pos * scale_3d, sat.pos * scale_3d, C_BLUE);
-            //DrawLine(g_sta.pos * scale_3d, (g_sta.pos * scale_3d) + (osDistanceV * scale_3d), C_BLUE);
         }
 
         // Draw AOS radius
@@ -737,14 +724,13 @@ void render3d() {
             DrawLine((P + v1) * scale_3d, (P + v2) * scale_3d, c);
         }
 
-        /*DrawLine(P, P + (u_lat * 100.0), C_RED);
-        DrawLine(P, P + (u_lon * 100.0), C_RED);
-        DrawLine(P, P + (u_vert * 100.0), C_RED);*/
+        /*DrawLine(P, P + u_lat, C_RED);
+        DrawLine(P, P + u_lon, C_RED);
+        DrawLine(P, P + u_vert, C_RED);*/
 
 
         // Draw icon
-        DrawShape3(satshape, sat.pos * scale_3d, 0.05, c);
-        //DrawShape3(satshape, satpos, 0.05, c);
+        DrawShape3(satshape, satpos, 0.05, c);
     }
 }
 
@@ -759,6 +745,7 @@ void render() {
         glMatrixMode(GL_PROJECTION);  // To operate on the Projection matrix
         glLoadIdentity();             // Reset
         gluPerspective(45.0f, height / height, 0.1f, 100.0f);
+	//glOrtho(0.0f, width, height, 0.0f, 0.1f, 100.0f);
         //glTranslatef(0.0f, 0.0f, 0.0f);
 
         // render 3D scene
