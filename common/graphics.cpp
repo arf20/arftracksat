@@ -673,26 +673,6 @@ void render3d() {
 
     DrawEarth3();
 
-    // Draw parallels and meridians
-    /*float coarsestep = 20.0;
-	float finestep = 2.5;
-    for (float lon = -180.0; lon <= 180.0; lon += coarsestep) {
-        for (float lat = -90.0; lat <= 90.0; lat += finestep) {
-            DrawGeoLine3({ lon, lat, 0.0 }, { lon, lat + finestep, 0.0 }, C_BLUE);
-        }
-    }
-
-    for (float lat = -80.0; lat <= 70.0; lat += coarsestep) {
-        for (float lon = -180.0; lon <= 180.0; lon += finestep) {
-            DrawGeoLine3({ lon, lat, 0.0 }, { lon + finestep, lat, 0.0 }, C_BLUE);
-        }
-    }*/
-
-    // Draw wireframe earth
-    /*for (shape &continent : continents) {
-        DrawGeoShape3(continent.points);
-    }*/
-
     DrawShape3(stashape, geoTo3D(g_sta.geo), 0.05f, C_GREEN);
 
     // Draw sats
@@ -711,16 +691,15 @@ void render3d() {
         // Draw AOS radius
         xyz_t geo = sat.geo;
         geo.height = 0.0f;
-        xyz_t P = geoToECEF(geo);
         xyz_t u_lat = uLat(geo); xyz_t u_lon = uLon(geo); xyz_t u_vert = uVert(geo);
-        float chord = 2 * EARTHR * sin(TORAD * sat.aosRadiusAngle / 2);
-        float depth = EARTHR - sqrt((EARTHR * EARTHR) - ((chord / 2) * (chord / 2)));
-        P = (P - (u_vert * depth)) + (u_vert * 20.0f);
+        float circler = EARTHR * sin(TORAD * sat.aosRadiusAngle);
+        float circlec = EARTHR * cos(TORAD * sat.aosRadiusAngle);
+        xyz_t P = u_vert * circlec;
 
         float finestep = 5.0f;
         for (float i = 0.0f; i <= 360.0f; i += finestep) {
-            xyz_t v1 = (u_lon * (chord / 2) * cos(TORAD * i)) + (u_lat * (chord / 2) * sin(TORAD * i));
-            xyz_t v2 = (u_lon * (chord / 2) * cos(TORAD * (i + finestep))) + (u_lat * (chord / 2) * sin(TORAD * (i + finestep)));
+            xyz_t v1 = (u_lon * (circler) * cos(TORAD * i)) + (u_lat * (circler) * sin(TORAD * i));
+            xyz_t v2 = (u_lon * (circler) * cos(TORAD * (i + finestep))) + (u_lat * (circler) * sin(TORAD * (i + finestep)));
             DrawLine((P + v1) * scale_3d, (P + v2) * scale_3d, c);
         }
 
