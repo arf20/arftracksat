@@ -642,16 +642,15 @@ void render2d() {
         // Draw AOS radius
         xyz_t geo = sat.geo;
         geo.height = 0.0f;
-        xyz_t P = geoToECEF(geo);
         xyz_t u_lat = uLat(geo); xyz_t u_lon = uLon(geo); xyz_t u_vert = uVert(geo);
-        float chord = 2 * EARTHR * sin(TORAD * sat.aosRadiusAngle / 2);
-        float depth = EARTHR - sqrt((EARTHR * EARTHR) - ((chord / 2) * (chord / 2)));
-        P = P - (u_vert * depth);
+        float circler = EARTHR * sin(TORAD * sat.aosRadiusAngle);
+        float circlec = EARTHR * cos(TORAD * sat.aosRadiusAngle);
+        xyz_t P = u_vert * circlec;
 
         float finestep = 5.0f;
         for (float i = 0.0f; i <= 360.0f; i += finestep) {
-            xyz_t p1 = ECEFToGeo(P + (u_lon * (chord / 2) * cos(TORAD * i)) + (u_lat * (chord / 2) * sin(TORAD * i)));
-            xyz_t p2 = ECEFToGeo(P + (u_lon * (chord / 2) * cos(TORAD * (i + finestep))) + (u_lat * (chord / 2) * sin(TORAD * (i + finestep))));
+            xyz_t p1 = ECEFToGeo(P + (u_lon * (circler) * cos(TORAD * i)) + (u_lat * (circler) * sin(TORAD * i)));
+            xyz_t p2 = ECEFToGeo(P + (u_lon * (circler) * cos(TORAD * (i + finestep))) + (u_lat * (circler) * sin(TORAD * (i + finestep))));
             if (abs(p1.lat) > 85.0f || abs(p2.lat) > 85.0f) continue;
             if (abs(p2.lon - p1.lon) > 50.0f) continue;
             p1.height = 0.0f; p2.height = 0.0f;
