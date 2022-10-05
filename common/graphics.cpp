@@ -69,7 +69,6 @@ static float offy = 0.0f;
 static float scale_3d = 5.0f / EARTHR;
 static float scale_model = EARTHR / 100.0f;
 static float rotatex;
-//static float rotatey = 0.0f;
 static float rotatez;
 
 #define ROT_DEG 5.0f
@@ -90,7 +89,6 @@ void DrawShape(std::vector<xyz_t>& shape, xyz_t pos, float scale, xyz_t c = C_WH
 		xyz_t v1{ shape[i].x, -shape[i].y };
 		xyz_t v2{ shape[i + 1].x, -shape[i + 1].y };
 		DrawLine(pos + (v1 * scale), pos + (v2 * scale), c);
-		//DrawLineDecal(pos + (shape[i] * scale), pos + (shape[i + 1] * scale), p);
 	}
 	xyz_t v1{ shape[0].x, -shape[0].y };
 	xyz_t v2{ shape[shape.size() - 1].x, -shape[shape.size() - 1].y };
@@ -320,14 +318,11 @@ void DrawGeoShape3(std::vector<xyz_t>& shape, xyz_t c = C_WHITE) {
 }
 
 void DrawEarth3() {
-// Loop over shapes
+    // Loop over shapes
     glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
-    //glRotatef(rotatex - 90.0f, 1.0f, 0.0f, 0.0f);
 
     for (size_t s = 0; s < earth_shapes.size(); s++) {
         glBegin(GL_TRIANGLES);
-
-        //glColor3f(1.0f, 1.0f, 1.0f);
 
         // Loop over faces(polygon)
         size_t index_offset = 0;
@@ -337,21 +332,12 @@ void DrawEarth3() {
             if (material == 0) glColor3f(C_OCEAN);
             if (material == 1) glColor3f(C_LAND);
             if (material == 2) glColor3f(1.0f, 1.0f, 1.0f);
-            //std::cout << material << std::endl;
 
             size_t fv = size_t(earth_shapes[s].mesh.num_face_vertices[f]);
 
             // Loop over vertices in the face.
             for (size_t v = 0; v < fv; v++) {
                 tinyobj::index_t idx = earth_shapes[s].mesh.indices[index_offset + v];  // vertex idx
-
-                // vertex colors
-                /*tinyobj::real_t red   = earth_attrib.colors[3*size_t(idx.vertex_index)+0];
-                tinyobj::real_t green = earth_attrib.colors[3*size_t(idx.vertex_index)+1];
-                tinyobj::real_t blue  = earth_attrib.colors[3*size_t(idx.vertex_index)+2];
-
-                // draw color
-                //glColor3f(red, green, blue);*/
 
                 // access to vertex
                 tinyobj::real_t vx = earth_attrib.vertices[3*size_t(idx.vertex_index)+0];
@@ -360,19 +346,6 @@ void DrawEarth3() {
 
                 // draw triangle
                 glVertex3f(vx * scale_model * scale_3d, vy * scale_model * scale_3d, vz * scale_model * scale_3d);
-
-                /*// Check if 'normal_index' is zero or positive. negative = no normal data
-                if (idx.normal_index >= 0) {
-                    tinyobj::real_t nx = earth_attrib.normals[3*size_t(idx.normal_index)+0];
-                    tinyobj::real_t ny = earth_attrib.normals[3*size_t(idx.normal_index)+1];
-                    tinyobj::real_t nz = earth_attrib.normals[3*size_t(idx.normal_index)+2];
-                }
-
-                // Check if 'texcoord_index' is zero or positive. negative = no texcoord data
-                if (idx.texcoord_index >= 0) {
-                    tinyobj::real_t tx = earth_attrib.texcoords[2*size_t(idx.texcoord_index)+0];
-                    tinyobj::real_t ty = earth_attrib.texcoords[2*size_t(idx.texcoord_index)+1];
-                }*/
             }
             index_offset += fv;
         }
@@ -528,7 +501,6 @@ void common2d() {
 	DrawString(curpos, "        LOCAL  " + std::to_string(loctime.tm_hour) + ":" + std::to_string(loctime.tm_min) + ":" + std::to_string(loctime.tm_sec)); curpos.y += 4.0f * TEXT_HEIGHT;
 
     // Sat column
-	//curpos = { 200.f + (ScreenWidth() / 2.0f), 100 };
 
     DrawString(curpos, "SATELLITE (" + std::to_string(g_shownSats.size()) + ")"); curpos.y += 2.0f * TEXT_HEIGHT;
 
@@ -620,7 +592,6 @@ void render2d() {
     for (shape &continent : continents) {
         DrawGeoShape(continent.points);
     }
-    
 
     // Draw sta                                                            
     xyz_t stapos = geoToMercator(g_sta.geo);
@@ -664,10 +635,8 @@ void render2d() {
 }
 
 void render3d() {
-    //glScalef(scale_3d, scale_3d, scale_3d);
     glTranslatef(0.0f, 0.0f, -14.0f);
     glRotatef(rotatex - 90.0f, 1.0f, 0.0f, 0.0f);
-    //glRotatef(rotatey, 0.0f, 1.0f, 0.0f);
     glRotatef(-rotatez - 90.0f, 0.0f, 0.0f, 1.0f);
 
     DrawEarth3();
@@ -702,11 +671,6 @@ void render3d() {
             DrawLine((P + v1) * scale_3d, (P + v2) * scale_3d, c);
         }
 
-        /*DrawLine(P, P + u_lat, C_RED);
-        DrawLine(P, P + u_lon, C_RED);
-        DrawLine(P, P + u_vert, C_RED);*/
-
-
         // Draw icon
         DrawShape3(satshape, satpos, 0.05, c);
     }
@@ -723,13 +687,11 @@ void render() {
         glMatrixMode(GL_PROJECTION);  // To operate on the Projection matrix
         glLoadIdentity();             // Reset
         gluPerspective(45.0f, height / height, 0.1f, 100.0f);
-	//glOrtho(0.0f, width, height, 0.0f, 0.1f, 100.0f);
-        //glTranslatef(0.0f, 0.0f, 0.0f);
+	    //glOrtho(0.0f, width, height, 0.0f, 0.1f, 100.0f);
 
         // render 3D scene
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
-        //glScalef(scale_3d, scale_3d, scale_3d);
         render3d();
 
         // reset viewport
@@ -805,10 +767,6 @@ void startGraphics(std::vector<std::vector<sat>::iterator>& shownSats, station& 
     // enable depth test
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
-
-    // enable MSAA
-    //glEnable(GL_MULTISAMPLE);
-    //glHint(GL_MULTISAMPLE_FILTER_HINT_NV, GL_NICEST);
     
     GLint iMultiSample = 0;
     GLint iNumSamples = 0;
