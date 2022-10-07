@@ -1,6 +1,3 @@
-#include <glm/glm.hpp>              // glm defines "I" i think
-#include <glm/gtc/type_ptr.hpp>
-
 #include "graphics.hpp"
 
 #include <GL/freeglut.h>
@@ -65,187 +62,6 @@ void computeLoop(std::vector<std::vector<sat>::iterator>& shownSats, station& st
     while (true) {
 		compstats = computeSats(shownSats, sta, selsatidx);
 	}
-}
-
-// Primitive drawing functions
-
-void DrawLine(xyz_t a, xyz_t b, xyz_t c = C_WHITE) {
-    glBegin(GL_LINES);
-    glColor3f(c.x, c.y, c.z);
-    glVertex3f(a.x, a.y, a.z);
-    glVertex3f(b.x, b.y, b.z);
-    glEnd();
-}
-
-void DrawShape(std::vector<xyz_t>& shape, xyz_t pos, float scale, xyz_t c = C_WHITE) {
-    if (shape.size() == 0) return;
-	for (int i = 0; i < shape.size() - 1; i++) {
-		xyz_t v1{ shape[i].x, -shape[i].y };
-		xyz_t v2{ shape[i + 1].x, -shape[i + 1].y };
-		DrawLine(pos + (v1 * scale), pos + (v2 * scale), c);
-	}
-	xyz_t v1{ shape[0].x, -shape[0].y };
-	xyz_t v2{ shape[shape.size() - 1].x, -shape[shape.size() - 1].y };
-	DrawLine(pos + (v1 * scale), pos + (v2 * scale), c);
-}
-
-xyz_t rot3x(xyz_t v, float theta) {
-    theta = theta * TORAD;
-    xyz_t t = {
-        v.x,
-        (v.y * cos(theta)) - (v.z * sin(theta)),
-        (v.y * sin(theta)) + (v.z * cos(theta))
-    };
-    return t;
-}
-
-xyz_t rot3y(xyz_t v, float theta) {
-    theta = theta * TORAD;
-    xyz_t t = {
-        (v.x * cos(theta)) + (v.z * sin(theta)),
-        v.y,
-        (-v.x * sin(theta)) + (v.z * cos(theta))
-    };
-    return t;
-}
-
-xyz_t rot3z(xyz_t v, float theta) {
-    theta = theta * TORAD;
-    xyz_t t = {
-        (v.x * cos(theta)) - (v.y * sin(theta)),
-        (v.x * sin(theta)) + (v.y * cos(theta)),
-        v.z
-    };
-    return t;
-}
-
-// must face camera always
-void DrawShape3(std::vector<xyz_t>& shape, xyz_t pos, float scale, xyz_t c = C_WHITE) {
-    // get model matrix
-    glm::mat4 view;
-    glGetFloatv(GL_MODELVIEW_MATRIX, (float*)&view);
-
-    // stop using GL's matrix
-    glLoadIdentity();
-    glTranslatef(0.0f, 0.0f, -14.0f);
-
-    // compute position with GL's matrix using GLM
-    glm::vec4 pos_vec(pos.x, pos.y, pos.z, 0.0f);
-    pos_vec = view * pos_vec;
-    pos = { pos_vec.x, pos_vec.y, pos_vec.z};
-
-    if (shape.size() == 0) return;
-	for (int i = 0; i < shape.size() - 1; i++) {
-		DrawLine(pos + (shape[i] * scale), pos + (shape[i + 1] * scale), c);
-	}
-
-    DrawLine(pos + (shape[0] * scale), pos + (shape[shape.size() - 1] * scale), c);
-    
-    // return to GL matrix
-    glRotatef(rotatex - 90.0f, 1.0f, 0.0f, 0.0f);
-    glRotatef(-rotatez - 90.0f, 0.0f, 0.0f, 1.0f);
-}
-
-template <typename T> int sgn(T val) {
-	return (T(0) < val) - (val < T(0));
-}
-
-xyz_t geoToMercator(xyz_t geo) {
-	xyz_t t;
-	t.x = (scale_2d / (2.0f * PI)) * 2.0f * ((TORAD * geo.lon) + PI);
-	t.y = (scale_2d / (2.0f * PI)) * 2.0f * (PI - log(tan((PI / 4.0f) + ((TORAD * geo.lat) / 2.0f))));
-    t.x += offx;
-    t.y += offy;
-	return t;
-}
-
-xyz_t geoTo3D(xyz_t geo) {
-    return geoToECEF(geo) * scale_3d;
-}
-
-void DrawGeoLine(xyz_t geo1, xyz_t geo2, xyz_t c = C_WHITE) {
-	xyz_t t1 = geoToMercator(geo1);
-	xyz_t t2 = geoToMercator(geo2);
-	DrawLine(t1, t2, c);
-}
-
-void DrawGeoLines(std::vector<xyz_t>& lines, xyz_t c = C_WHITE) {
-    if (lines.size() == 0) return;
-    for (int i = 0; i < lines.size() - 1; i++) {
-        if (abs(lines[i + 1].lon - lines[i].lon) > 50.0f) continue;
-	    DrawGeoLine(lines[i], lines[i + 1], c);
-    }
-}
-
-void DrawGeoShape(const std::vector<xyz_t>& shape, xyz_t c = C_WHITE) {
-    if (shape.size() == 0) return;
-    for (int i = 0; i < shape.size() - 1; i++) {
-        if (abs(shape[i + 1].lon - shape[i].lon) > 50.0f) continue;
-	    DrawGeoLine(shape[i], shape[i + 1], c);
-    }
-    DrawGeoLine(shape[0], shape[shape.size() - 1], c);
-}
-
-void DrawGeoLine3(xyz_t geo1, xyz_t geo2, xyz_t c = C_WHITE) {
-	xyz_t t1 = geoTo3D(geo1);
-	xyz_t t2 = geoTo3D(geo2);
-	DrawLine(t1, t2, c);
-}
-
-void DrawGeoLines3(const std::vector<xyz_t>& lines, xyz_t c = C_WHITE) {
-    if (lines.size() == 0) return;
-    for (int i = 0; i < lines.size() - 1; i++) {
-        if (abs(lines[i + 1].lon - lines[i].lon) > 50.0f) continue;
-	    DrawGeoLine3(lines[i], lines[i + 1], c);
-    }
-}
-
-void DrawGeoShape3(const std::vector<xyz_t>& shape, xyz_t c = C_WHITE) {
-    if (shape.size() == 0) return;
-    for (int i = 0; i < shape.size() - 1; i++) {
-        if (abs(shape[i + 1].lon - shape[i].lon) > 50.0f) continue;
-	    DrawGeoLine3(shape[i], shape[i + 1], c);
-    }
-    DrawGeoLine3(shape[0], shape[shape.size() - 1], c);
-}
-
-void DrawEarth3() {
-    // Loop over shapes
-    glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
-
-    for (size_t s = 0; s < earth.shapes.size(); s++) {
-        glBegin(GL_TRIANGLES);
-
-        // Loop over faces(polygon)
-        size_t index_offset = 0;
-        for (size_t f = 0; f < earth.shapes[s].mesh.num_face_vertices.size(); f++) {
-            // per-face material
-            int material = earth.shapes[s].mesh.material_ids[f];
-            if (material == 0) glColor3f(C_OCEAN);
-            if (material == 1) glColor3f(C_LAND);
-            if (material == 2) glColor3f(1.0f, 1.0f, 1.0f);
-
-            size_t fv = size_t(earth.shapes[s].mesh.num_face_vertices[f]);
-
-            // Loop over vertices in the face.
-            for (size_t v = 0; v < fv; v++) {
-                tinyobj::index_t idx = earth.shapes[s].mesh.indices[index_offset + v];  // vertex idx
-
-                // access to vertex
-                tinyobj::real_t vx = earth.attrib.vertices[3*size_t(idx.vertex_index)+0];
-                tinyobj::real_t vy = earth.attrib.vertices[3*size_t(idx.vertex_index)+1];
-                tinyobj::real_t vz = earth.attrib.vertices[3*size_t(idx.vertex_index)+2];
-
-                // draw triangle
-                glVertex3f(vx * scale_model * scale_3d, vy * scale_model * scale_3d, vz * scale_model * scale_3d);
-            }
-            index_offset += fv;
-        }
-
-        glEnd();
-    }
-
-    glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
 }
 
 // ================== callbacks ==================
@@ -332,34 +148,34 @@ void keyboard(unsigned char key, int x, int y) {
 void render2d() {
     // Draw parallels and meridians                                                     
     for (float a = -180; a <= 180; a += 20) {
-        DrawGeoLine({a, -80.0f}, {a, 80.0f}, {0.0f, 0.0f, 1.0f});
-        DrawString(geoToMercator({ a, -80.0f }) + xyz_t{0.0f, TEXT_HEIGHT}, std::to_string((int)a), C_BLUE);
+        DrawGeoLine({a, -80.0f}, {a, 80.0f}, scale_2d, offx, offy, C_BLUE);
+        DrawString(geoToMercator({ a, -80.0f }, scale_2d, offx, offy) + xyz_t{0.0f, TEXT_HEIGHT}, std::to_string((int)a), C_BLUE);
     }
     for (float a = -80; a <= 80; a += 20) {
-        DrawGeoLine({-180.0f, a}, {180.0f, a}, {0.0f, 0.0f, 1.0f});
-        DrawString(geoToMercator({ 180.0f, a }) + xyz_t{10.0f, 0.0f}, std::to_string((int)a), C_BLUE);
+        DrawGeoLine({-180.0f, a}, {180.0f, a}, scale_2d, offx, offy, C_BLUE);
+        DrawString(geoToMercator({ 180.0f, a }, scale_2d, offx, offy) + xyz_t{10.0f, 0.0f}, std::to_string((int)a), C_BLUE);
     }
 
     // Draw map                                                           
     for (shape &continent : continents) {
-        DrawGeoShape(continent.points);
+        DrawGeoShape(continent.points, scale_2d, offx, offy);
     }
 
     // Draw sta                                                            
-    xyz_t stapos = geoToMercator(g_sta.geo);
-    DrawShape(stashape, stapos, 2.5, {0.0f, 1.0f, 0.0f});
+    xyz_t stapos = geoToMercator(g_sta.geo, scale_2d, offx, offy);
+    DrawShape(stashape, stapos, 2.5, C_GREEN);
 
     // Draw sats
     for (int i = 0; i < g_shownSats.size(); i++) {
         sat& sat = *g_shownSats[i];
-        xyz_t satpos = geoToMercator(sat.geo);
+        xyz_t satpos = geoToMercator(sat.geo, scale_2d, offx, offy);
 
         xyz_t c = C_RED;
         if (i == g_selsatidx) {
             c = C_YELLOW;
 
             // Draw orbit for selected sat
-            DrawGeoLines(sat.geoOrbit.points, C_ORANGE);
+            DrawGeoLines(sat.geoOrbit.points, scale_2d, offx, offy, C_ORANGE);
         }
 
         // Draw AOS radius
@@ -377,7 +193,7 @@ void render2d() {
             if (abs(p1.lat) > 85.0f || abs(p2.lat) > 85.0f) continue;
             if (abs(p2.lon - p1.lon) > 50.0f) continue;
             p1.height = 0.0f; p2.height = 0.0f;
-            DrawGeoLine(p1, p2, c);
+            DrawGeoLine(p1, p2, scale_2d, offx, offy, c);
         }
 
         // Draw icon
@@ -391,21 +207,21 @@ void render3d() {
     glRotatef(rotatex - 90.0f, 1.0f, 0.0f, 0.0f);
     glRotatef(-rotatez - 90.0f, 0.0f, 0.0f, 1.0f);
 
-    DrawEarth3();
+    DrawObj(earth, scale_model * scale_3d, 90.0f);
 
-    DrawShape3(stashape, geoTo3D(g_sta.geo), 0.05f, C_GREEN);
+    DrawBillboardShape3(stashape, geoToECEF(g_sta.geo) * scale_3d, 0.05f, C_GREEN);
 
     // Draw sats
     for (int i = 0; i < g_shownSats.size(); i++) {
         sat& sat = *g_shownSats[i];
-        xyz_t satpos = geoTo3D(sat.geo);
+        xyz_t satpos = geoToECEF(sat.geo) * scale_3d;
 
         xyz_t c = C_RED;
         if (i == g_selsatidx) {
             c = C_YELLOW;
 
             // Draw orbit for selected sat
-            DrawGeoLines3(sat.geoOrbit.points, C_ORANGE);
+            DrawGeoLines3(sat.geoOrbit.points, scale_3d, C_ORANGE);
         }
 
         // Draw AOS radius
@@ -424,7 +240,7 @@ void render3d() {
         }
 
         // Draw icon
-        DrawShape3(satshape, satpos, 0.05, c);
+        DrawBillboardShape3(satshape, satpos, 0.05, c);
     }
 }
 

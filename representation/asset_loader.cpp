@@ -13,8 +13,6 @@ using namespace nlohmann;
 #include <filesystem>
 
 std::vector<shape> loadMap(const std::string& mapfilepath) {
-	std::cout << "Loading GeoJSON map..." << std::endl;
-
 	std::vector<shape> continents;
 
 	std::ifstream mapfile(mapfilepath);
@@ -79,5 +77,12 @@ obj loadEarth(std::string& objpath) {
     o.attrib = reader.GetAttrib();
     o.shapes = reader.GetShapes();
     o.materials = reader.GetMaterials();
+
+	int polys = 0;
+	for (int i = 0; i < o.shapes.size(); i++)
+		polys += o.shapes[i].mesh.indices.size();
+
+	std::cout << "Earth loaded [" << polys << " polygons]" << std::endl;		
+
 	return o;
 }
