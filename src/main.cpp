@@ -1,6 +1,6 @@
-#include "sgdp4/sgdp4.h"
-#include "sat.hpp"
-#include "graphics.hpp"
+#include "../common/sgdp4/sgdp4.h"
+#include "../core/sat.hpp"
+#include "../representation/graphics.hpp"
 
 #include <ctime>
 #include <thread>
@@ -201,102 +201,8 @@ int main(int argc, char **argv) {
 	// ========================= SETUP DONE =========================
 
 	// start graphics
-	if (!noGraphics) {
-		std::thread graphicThread(startGraphics, std::ref(shownSats), std::ref(sta), mapfile, objfile);
-		graphicThread.detach();
-	}
-
-	std::this_thread::sleep_for(std::chrono::milliseconds(1000));	// Give user time to read
-
-	std::cout << std::setprecision(1) << std::fixed;	// 2 decimal digit precision
-
-	// time structures
-	tm utctime;
-	tm loctime;
-
-	// main screen loop
-	while (true) {
-		// clear screen
-		if (!noPrint) {
-			std::cout << "\x1B[2J\x1B[H";
-		}
-
-		// sleep for period
-		std::this_thread::sleep_for(std::chrono::milliseconds(period));
-
-		// now in unix time
-		time_t utct;
-		// propagate orbits for all sats for moment now
-		computeSats(shownSats, sta, g_selsatidx);
-
-		if (noPrint) continue;
-
-		// print station data
-		std::cout << "STATION\t\tLAT\tLON\tHGT\t\tX\tY\tZ" << std::endl;
-		std::cout << sta.name << "\t"; if (sta.name.length() < 8) std::cout << "\t";
-		std::cout << sta.geo.lat << "\t" << sta.geo.lon << "\t" << sta.geo.height << "\t\t";
-		std::cout << sta.pos.x << "\t" << sta.pos.y << "\t" << sta.pos.z << "\t" << std::endl << std::endl;
-
-		// get time structs in UTC and local
-		gmtime_r(&utct, &utctime);
-		localtime_r(&utct, &loctime);
-
-		// print time
-		std::cout << "TIME\tUTC\t" << utctime.tm_hour << ":" << utctime.tm_min << ":" << utctime.tm_sec << std::endl
-			<< "\tLOCAL\t" << loctime.tm_hour << ":" << loctime.tm_min << ":" << loctime.tm_sec << std::endl;
-
-		// header lines
-		std::string cl1 = "";
-		std::string cl2 = "";
-
-		// populate header
-		for (std::string& col : columns) {
-			if (col == "name") { cl2 += "NAME\t\t"; cl1 += "\t\t"; }
-			if (col == "azel") { cl2 += "AZ\tEL\t"; cl1 += "\t\t"; }
-			if (col == "dis") { cl2 += "DIS\t"; cl1 += "\t"; }
-			if (col == "geo") { cl2 += "LAT\tLON\tHGT\t"; cl1 += "\t\t\t"; }
-			if (col == "pos") { cl2 += "X\tY\tZ\t"; cl1 += "POS\t\t\t"; }
-			if (col == "vel") { cl2 += "X\tY\tZ\t"; cl1 += "VEL\t\t\t"; }
-			if (col == "tab") { cl2 += "\t"; cl1 += "\t"; }
-		}
-
-		// print header
-		std::cout << cl1 << std::endl << cl2 << std::endl;
-
-		// per sat loop
-		for (int i = 0; i < shownSats.size(); i++) {
-			sat& sat = *shownSats[i];
-
-			// per column
-			for (std::string& col : columns) {
-				if (col == "name") {
-					std::cout << sat.name << "\t";
-					if (sat.name.length() < 8) std::cout << "\t";
-				}
-				if (col == "azel") std::cout << sat.aer.azimuth << "\t" << sat.aer.elevation << "\t";
-				if (col == "dis") {
-					std::cout << sat.aer.distance << "\t";
-				}
-				if (col == "geo") std::cout << sat.geo.lat << "\t" << sat.geo.lon << "\t" << sat.geo.height << "\t";
-				if (col == "pos") {
-					std::cout << sat.pos.x << "\t";
-					std::cout << sat.pos.y << "\t";
-					std::cout << sat.pos.z << "\t";
-				}
-				if (col == "vel") {
-					std::cout << sat.vel.x << "\t";
-					std::cout << sat.vel.y << "\t";
-					std::cout << sat.vel.z << "\t";
-				}
-				if (col == "tab") std::cout << "\t";
-			}
-
-			// hardcoded doppler print for debug
-			std::cout << "\t" << sat.doppler << std::endl;
-		}
-	}
+	startGraphics(shownSats, sta, mapfile, objfile);
 
 	// never reached ;)
 	exit(0);
 }
-

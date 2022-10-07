@@ -1,19 +1,21 @@
-#include <glm/glm.hpp>
+#include <glm/glm.hpp>              // glm defines "I" i think
 #include <glm/gtc/type_ptr.hpp>
 
-#include "sat.hpp"
 #include "graphics.hpp"
-#include "shapes.hpp"
-#include "sgdp4/sgdp4.h"
 
 #include <GL/freeglut.h>
 #include <GL/gl.h>
 
-#define TINYOBJLOADER_IMPLEMENTATION
-#include "tiny_obj_loader.h"
+#include "../common/types-defs.hpp"
+#include "../common/sgdp4/sgdp4.h"
+#include "shapes.hpp"
+#include "colors.hpp"
+#include "graphic_util.hpp"
 
-#include <nlohmann/json.hpp>
-using namespace nlohmann;
+#include "../core/sat.hpp"
+
+#include "asset_loader.hpp"
+#include "legacy_gl_ui/legacy_gl_ui.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -21,39 +23,22 @@ using namespace nlohmann;
 #include <chrono>
 #include <string>
 #include <filesystem>
+#include <thread>
 
 // sat.cpp exports
-tm utctime, loctime, aosloctime, aosutctime, losloctime, losutctime;
-std::chrono::nanoseconds g_computeTime;
+//float g_computeTime;
 int g_selsatidx = 0;     // index of shownSats
 
 // File Globals
 static GLfloat width = 1;
 static GLfloat height = 1;
 
-#define TEXT_HEIGHT 15
-
-#define C_RED     {1.0f, 0.0f, 0.0f}
-#define C_GREEN   {0.0f, 1.0f, 0.0f}
-#define C_BLUE    {0.0f, 0.0f, 1.0f}
-#define C_YELLOW  {1.0f, 1.0f, 0.0f}
-#define C_ORANGE  {1.0f, 0.644f, 0.0f}
-#define C_WHITE   {1.0f, 1.0f, 1.0f}
-
-#define C_OCEAN   0.0f, 0.129f, 0.278f
-#define C_LAND    0.207f, 0.368f, 0.231f
-#define C_ANT     0.541f, 0.498f, 0.502f
-
 static std::vector<std::vector<sat>::iterator> g_shownSats;
 static station g_sta;
 
-// lat/lon shapes
+// assets
 static std::vector<shape> continents;
-
-// 3D assets
-tinyobj::attrib_t earth_attrib;
-std::vector<tinyobj::shape_t> earth_shapes;
-std::vector<tinyobj::material_t> earth_materials;
+static obj earth;
 
 static float timeBase = 0.0f;
 
@@ -72,6 +57,15 @@ static float rotatex;
 static float rotatez;
 
 #define ROT_DEG 5.0f
+
+compute_stats compstats;
+
+// Copute thing
+void computeLoop(std::vector<std::vector<sat>::iterator>& shownSats, station& sta, size_t selsatidx) {
+    while (true) {
+		compstats = computeSats(shownSats, sta, selsatidx);
+	}
+}
 
 // Primitive drawing functions
 
@@ -125,12 +119,6 @@ xyz_t rot3z(xyz_t v, float theta) {
     return t;
 }
 
-glm::vec3 orthogonalize(glm::vec3 toOrtho, glm::vec3 orthoAgainst) {
-    float bottom = (orthoAgainst.x*orthoAgainst.x)+(orthoAgainst.y*orthoAgainst.y)+(orthoAgainst.z*orthoAgainst.z);
-    float top = (toOrtho.x*orthoAgainst.x)+(toOrtho.y*orthoAgainst.y)+(toOrtho.z*orthoAgainst.z);
-    return toOrtho - top/bottom*orthoAgainst;
-}
-
 // must face camera always
 void DrawShape3(std::vector<xyz_t>& shape, xyz_t pos, float scale, xyz_t c = C_WHITE) {
     // get model matrix
@@ -158,88 +146,8 @@ void DrawShape3(std::vector<xyz_t>& shape, xyz_t pos, float scale, xyz_t c = C_W
     glRotatef(-rotatez - 90.0f, 0.0f, 0.0f, 1.0f);
 }
 
-void DrawString(xyz_t pos, std::string str, xyz_t c = C_WHITE) {
-    glColor3f(c.x, c.y, c.z);
-    glRasterPos3f(pos.x, pos.y, pos.z);
-    for (int i = 0; i < str.length(); i++)
-        glutBitmapCharacter(GLUT_BITMAP_9_BY_15, str[i]);
-}
-
-// Helper functions
-
-bool loadMap(std::string mapfilepath) {
-	std::cout << "Loading GeoJSON map..." << std::endl;
-	std::ifstream mapfile(mapfilepath);
-	json geojson;
-	try {
-		mapfile >> geojson;
-		json map = geojson["features"][0]["geometry"]["coordinates"];
-	}
-	catch (json::exception& e) {
-		std::cout << "Malformed (Geo)JSON map: " + std::string(e.what()) << std::endl;
-		return false;
-	}
-
-	std::vector<std::vector<std::vector<std::vector<double>>>> tempmap; // last vector could be a pair...
-
-	try {
-		tempmap = geojson["features"][0]["geometry"]["coordinates"].get<std::vector<std::vector<std::vector<std::vector<double>>>>>();
-	}
-	catch (json::exception& e) {
-		std::cout << "Malformed (Geo)JSON map: " + std::string(e.what()) << std::endl;
-		return false;
-	}
-
-	for (auto &a : tempmap) {
-		for (auto &b : a) {
-			shape shape;
-			for (auto &c : b) {
-				shape.points.push_back(xyz_t{ c[0], c[1], 0.0f });
-			}
-			continents.push_back(shape);
-		}
-	}
-
-	int pointcount = 0;
-	for (shape &shape : continents)
-        pointcount += shape.points.size();
-
-	std::cout << "Map loaded [" << pointcount << " points]" << std::endl;
-	return true;
-}
-
-void loadEarth(std::string& objpath) {
-    std::filesystem::path path(objpath);
-    tinyobj::ObjReaderConfig reader_config;
-    reader_config.mtl_search_path = path.parent_path(); // Path to material files
-
-    tinyobj::ObjReader reader;
-
-    if (!reader.ParseFromFile(objpath, reader_config)) {
-        if (!reader.Error().empty()) {
-            std::cerr << "TinyObjReader: " << reader.Error();
-        }
-        exit(1);
-    }
-
-    if (!reader.Warning().empty()) {
-        std::cout << "TinyObjReader: " << reader.Warning();
-    }
-
-    earth_attrib = reader.GetAttrib();
-    earth_shapes = reader.GetShapes();
-    earth_materials = reader.GetMaterials();
-}
-
 template <typename T> int sgn(T val) {
 	return (T(0) < val) - (val < T(0));
-}
-
-std::string toString(float n) {
-    std::ostringstream out;
-    out.precision(2);
-    out << std::fixed << n;
-    return out.str();
 }
 
 xyz_t geoToMercator(xyz_t geo) {
@@ -249,22 +157,6 @@ xyz_t geoToMercator(xyz_t geo) {
     t.x += offx;
     t.y += offy;
 	return t;
-}
-
-xyz_t geoToECEF(xyz_t geo) {
-    xyz_t t;
-    geo.lat = geo.lat * TORAD;
-    geo.lon = geo.lon * TORAD;
-    xyz_geodetic_to_ecef(&geo, &t);
-    return t;
-}
-
-xyz_t ECEFToGeo(xyz_t pos) {
-    xyz_t t;
-    xyz_ecef_to_geodetic(&pos, &t);
-    t.lat = t.lat * TODEG;
-    t.lon = t.lon * TODEG;
-    return t;
 }
 
 xyz_t geoTo3D(xyz_t geo) {
@@ -285,7 +177,7 @@ void DrawGeoLines(std::vector<xyz_t>& lines, xyz_t c = C_WHITE) {
     }
 }
 
-void DrawGeoShape(std::vector<xyz_t>& shape, xyz_t c = C_WHITE) {
+void DrawGeoShape(const std::vector<xyz_t>& shape, xyz_t c = C_WHITE) {
     if (shape.size() == 0) return;
     for (int i = 0; i < shape.size() - 1; i++) {
         if (abs(shape[i + 1].lon - shape[i].lon) > 50.0f) continue;
@@ -300,7 +192,7 @@ void DrawGeoLine3(xyz_t geo1, xyz_t geo2, xyz_t c = C_WHITE) {
 	DrawLine(t1, t2, c);
 }
 
-void DrawGeoLines3(std::vector<xyz_t>& lines, xyz_t c = C_WHITE) {
+void DrawGeoLines3(const std::vector<xyz_t>& lines, xyz_t c = C_WHITE) {
     if (lines.size() == 0) return;
     for (int i = 0; i < lines.size() - 1; i++) {
         if (abs(lines[i + 1].lon - lines[i].lon) > 50.0f) continue;
@@ -308,7 +200,7 @@ void DrawGeoLines3(std::vector<xyz_t>& lines, xyz_t c = C_WHITE) {
     }
 }
 
-void DrawGeoShape3(std::vector<xyz_t>& shape, xyz_t c = C_WHITE) {
+void DrawGeoShape3(const std::vector<xyz_t>& shape, xyz_t c = C_WHITE) {
     if (shape.size() == 0) return;
     for (int i = 0; i < shape.size() - 1; i++) {
         if (abs(shape[i + 1].lon - shape[i].lon) > 50.0f) continue;
@@ -321,28 +213,28 @@ void DrawEarth3() {
     // Loop over shapes
     glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
 
-    for (size_t s = 0; s < earth_shapes.size(); s++) {
+    for (size_t s = 0; s < earth.shapes.size(); s++) {
         glBegin(GL_TRIANGLES);
 
         // Loop over faces(polygon)
         size_t index_offset = 0;
-        for (size_t f = 0; f < earth_shapes[s].mesh.num_face_vertices.size(); f++) {
+        for (size_t f = 0; f < earth.shapes[s].mesh.num_face_vertices.size(); f++) {
             // per-face material
-            int material = earth_shapes[s].mesh.material_ids[f];
+            int material = earth.shapes[s].mesh.material_ids[f];
             if (material == 0) glColor3f(C_OCEAN);
             if (material == 1) glColor3f(C_LAND);
             if (material == 2) glColor3f(1.0f, 1.0f, 1.0f);
 
-            size_t fv = size_t(earth_shapes[s].mesh.num_face_vertices[f]);
+            size_t fv = size_t(earth.shapes[s].mesh.num_face_vertices[f]);
 
             // Loop over vertices in the face.
             for (size_t v = 0; v < fv; v++) {
-                tinyobj::index_t idx = earth_shapes[s].mesh.indices[index_offset + v];  // vertex idx
+                tinyobj::index_t idx = earth.shapes[s].mesh.indices[index_offset + v];  // vertex idx
 
                 // access to vertex
-                tinyobj::real_t vx = earth_attrib.vertices[3*size_t(idx.vertex_index)+0];
-                tinyobj::real_t vy = earth_attrib.vertices[3*size_t(idx.vertex_index)+1];
-                tinyobj::real_t vz = earth_attrib.vertices[3*size_t(idx.vertex_index)+2];
+                tinyobj::real_t vx = earth.attrib.vertices[3*size_t(idx.vertex_index)+0];
+                tinyobj::real_t vy = earth.attrib.vertices[3*size_t(idx.vertex_index)+1];
+                tinyobj::real_t vz = earth.attrib.vertices[3*size_t(idx.vertex_index)+2];
 
                 // draw triangle
                 glVertex3f(vx * scale_model * scale_3d, vy * scale_model * scale_3d, vz * scale_model * scale_3d);
@@ -354,39 +246,6 @@ void DrawEarth3() {
     }
 
     glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
-}
-
-#define EARTHECC2 .006694385000 /* Eccentricity of Earth^2 */
-
-xyz_t uLat(xyz_t geo) {
-    geo.lat = geo.lat * TORAD;
-    geo.lon = geo.lon * TORAD;
-    return xyzunit(xyz_t{
-        (- EARTHR - geo.height) * cos(geo.lon) * sin(geo.lat),
-        (- EARTHR - geo.height) * sin(geo.lon) * sin(geo.lat),
-        
-        ((EARTHR * EARTHECC2 * (-EARTHECC2 + 1) * sin(geo.lat) * sin(geo.lat) * cos(geo.lat))
-        / pow(((-EARTHECC2 * sin(geo.lat) * sin(geo.lat)) + 1), 3.0f/2.0f))
-        + ((((EARTHR * (-EARTHECC2 + 1))
-        / sqrt((-EARTHECC2 * sin(geo.lat) * sin(geo.lat)) + 1)) + geo.height)
-        * cos(geo.lat))
-
-    });
-}
-
-xyz_t uLon(xyz_t geo) {
-    geo.lat = geo.lat * TORAD;
-    geo.lon = geo.lon * TORAD;
-    return xyzunit(xyz_t{
-        (- EARTHR - geo.height) * cos(geo.lat) * sin(geo.lon),
-        (EARTHR + geo.height) * cos(geo.lat) * cos(geo.lon),
-        0.0f
-    });
-}
-
-xyz_t uVert(xyz_t geo) {
-    xyz_t v = geoTo3D(geo);
-    return xyzunit(v);
 }
 
 // ================== callbacks ==================
@@ -469,113 +328,6 @@ void keyboard(unsigned char key, int x, int y) {
     }
 }
 
-void common2d() {
-    // Draw info
-    float glTimeNow = glutGet(GLUT_ELAPSED_TIME);
-    float fps = 1 / ((glTimeNow - timeBase) / 1000.0f);
-    timeBase = glTimeNow;
-    std::string modestr = mode ? "PERSPECTIVE" : "MERCATOR";
-    DrawString({20, 20}, "FPS: " + toString(fps) + "  COMP TIME: " + toString(g_computeTime.count() / 1000000.0f) + "ms  MODE: " + modestr);
-
-	// Station column
-	xyz_t curpos{ 200.0f + (width / 2.0f), 50.0 };
-	float subcolspacing = 100;
-
-	DrawString(curpos, "STATION " + g_sta.name); curpos.y += 2.0f * TEXT_HEIGHT;
-
-	DrawString(curpos, "LAT"); curpos.y += TEXT_HEIGHT; 
-	DrawString(curpos, toString(g_sta.geo.lat)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
-	DrawString(curpos, "LON"); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, toString(g_sta.geo.lon)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
-	DrawString(curpos, "HGT"); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, toString(g_sta.geo.height)); curpos.x -= 2.0f * subcolspacing; curpos.y += 2.0f * TEXT_HEIGHT;
-
-	DrawString(curpos, "X"); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, toString(g_sta.pos.x)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
-	DrawString(curpos, "Y"); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, toString(g_sta.pos.y)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
-	DrawString(curpos, "Z"); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, toString(g_sta.pos.z)); curpos.x -= 2.0f * subcolspacing; curpos.y += 2.0f * TEXT_HEIGHT;    
-
-    DrawString(curpos, "TIME    UTC    " + std::to_string(utctime.tm_hour) + ":" + std::to_string(utctime.tm_min) + ":" + std::to_string(utctime.tm_sec)); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, "        LOCAL  " + std::to_string(loctime.tm_hour) + ":" + std::to_string(loctime.tm_min) + ":" + std::to_string(loctime.tm_sec)); curpos.y += 4.0f * TEXT_HEIGHT;
-
-    // Sat column
-
-    DrawString(curpos, "SATELLITE (" + std::to_string(g_shownSats.size()) + ")"); curpos.y += 2.0f * TEXT_HEIGHT;
-
-    for (int i = selsatoff; i < g_shownSats.size(); i++) {
-        if (i + 1 > selsatoff + SATLIST_SIZE) break;
-        auto sat = g_shownSats[i];
-        xyz_t c = C_WHITE;
-		if (i == g_selsatidx) { c = C_YELLOW; }
-
-		DrawString(curpos, std::to_string(i + 1) + ". " + sat->name, c);
-
-		curpos.y += TEXT_HEIGHT;
-    }
-
-    auto selsat = g_shownSats[g_selsatidx];
-
-	curpos.y += 2.0f * TEXT_HEIGHT;
-
-    // AOS
-    curpos.y += TEXT_HEIGHT;
-    DrawString(curpos, "UTC"); curpos.y += TEXT_HEIGHT;
-    DrawString(curpos, "LOCAL"); curpos.x += subcolspacing; curpos.y -= 2.0f * TEXT_HEIGHT;
-    DrawString(curpos, "AOS"); curpos.x += subcolspacing;
-    DrawString(curpos, "LOS"); curpos.x -= subcolspacing; curpos.y += TEXT_HEIGHT;
-    DrawString(curpos, std::to_string(aosutctime.tm_hour) + ":" + std::to_string(aosutctime.tm_min) + ":" + std::to_string(aosutctime.tm_sec)); curpos.x += subcolspacing;
-	DrawString(curpos, std::to_string(losutctime.tm_hour) + ":" + std::to_string(losutctime.tm_min) + ":" + std::to_string(losutctime.tm_sec)); curpos.x -= subcolspacing; curpos.y += TEXT_HEIGHT;
-    DrawString(curpos, std::to_string(aosloctime.tm_hour) + ":" + std::to_string(aosloctime.tm_min) + ":" + std::to_string(aosloctime.tm_sec)); curpos.x += subcolspacing;
-	DrawString(curpos, std::to_string(losloctime.tm_hour) + ":" + std::to_string(losloctime.tm_min) + ":" + std::to_string(losloctime.tm_sec)); curpos.x -= 2.0f * subcolspacing; curpos.y += 2.0f * TEXT_HEIGHT;
-
-    // AZEL
-    DrawString(curpos, "AZ"); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, toString(selsat->aer.azimuth)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
-	DrawString(curpos, "EL"); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, toString(selsat->aer.elevation)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
-	DrawString(curpos, "DIS"); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, toString(selsat->aer.distance)); curpos.x -= 2.0f * subcolspacing; curpos.y += 2.0f * TEXT_HEIGHT;
-
-    // GEO
-	DrawString(curpos, "LAT"); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, toString(selsat->geo.lat)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
-	DrawString(curpos, "LON"); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, toString(selsat->geo.lon)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
-	DrawString(curpos, "HGT"); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, toString(selsat->geo.height)); curpos.x -= 2.0f * subcolspacing; curpos.y += 2.0f * TEXT_HEIGHT;
-
-    // ECEF
-	DrawString(curpos, "POS"); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, "X"); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, toString(selsat->pos.x)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
-	DrawString(curpos, "Y"); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, toString(selsat->pos.y)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
-	DrawString(curpos, "Z"); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, toString(selsat->pos.z)); curpos.x -= 2.0f * subcolspacing; curpos.y += 2.0f * TEXT_HEIGHT;
-
-    // VEL ECEF
-	DrawString(curpos, "VEL"); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, "X"); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, toString(selsat->vel.x)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
-	DrawString(curpos, "Y"); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, toString(selsat->vel.y)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
-	DrawString(curpos, "Z"); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, toString(selsat->vel.z)); curpos.x -= 2.0f * subcolspacing; curpos.y += 2.0f * TEXT_HEIGHT;
-
-    // DOPPLER
-	/*DrawString(curpos, "FREQ"); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, std::to_string(selsat->freq / 1000000.0)); curpos.x += subcolspacing; curpos.y -= TEXT_HEIGHT;
-	DrawString(curpos, "DOPPLER"); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, std::to_string(selsat->doppler)); curpos.x -= subcolspacing; curpos.y += 2.0f * TEXT_HEIGHT;
-    
-    
-	DrawString(curpos, "COMPUTE TIME"); curpos.y += TEXT_HEIGHT;
-	DrawString(curpos, std::to_string(computeTime)); curpos.y += TEXT_HEIGHT;*/
-    //DrawString(curpos, std::to_string(rotatex)); curpos.y += TEXT_HEIGHT;
-    //DrawString(curpos, std::to_string(rotatez)); curpos.y += TEXT_HEIGHT;
-}
 
 void render2d() {
     // Draw parallels and meridians                                                     
@@ -680,6 +432,11 @@ void render() {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);                   // Set background color to black and opaque
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);     // Clear the color and depth buffers
 
+    // Draw info
+    float glTimeNow = glutGet(GLUT_ELAPSED_TIME);
+    float deltaTime = (glTimeNow - timeBase) / 1000.0f;
+    timeBase = glTimeNow;
+
     if (mode) { // 3D
         // set viewport to square
         glViewport(0, 0, height, height);
@@ -724,7 +481,7 @@ void render() {
     // with screen coordinates
     glTranslatef(-1.0, 1.0f, 0.0f);
     glScalef(2.0f/width, -2.0f/height, 0.0f);
-    common2d();
+    legacy_gl_ui(width, height, deltaTime, compstats.computeTime, mode, compstats.timeNow, g_sta, g_shownSats, g_selsatidx);
 
     glutSwapBuffers();
 }
@@ -744,9 +501,9 @@ void startGraphics(std::vector<std::vector<sat>::iterator>& shownSats, station& 
     g_sta = sta;
 
     // Load map
-    loadMap(mapfile);
+    continents = loadMap(mapfile);
     // Load 3D earth
-    loadEarth(objfile);
+    earth = loadEarth(objfile);
 
     // Init glut
     int argc = 0;
@@ -775,6 +532,8 @@ void startGraphics(std::vector<std::vector<sat>::iterator>& shownSats, station& 
 
     rotatex = g_sta.geo.lat;
     rotatez = g_sta.geo.lon;
+
+    std::thread computeThread(computeLoop, std::ref(shownSats), std::ref(sta), g_selsatidx);
 
     glutMainLoop();                     // Enter the infinite event-processing loop
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "sgdp4/sgdp4-types.h"
+#include "../common/sgdp4/sgdp4-types.h"
 #include <vector>
 
 std::vector<xyz_t> stashape = {

@@ -1,8 +1,8 @@
 #include "sat.hpp"
 
-#include "graphics.hpp"
-#include "util.hpp"
-#include "sgdp4/sgdp4.h"
+//#include "graphics.hpp"
+#include "../common/util.hpp"
+#include "../common/sgdp4/sgdp4.h"
 
 #include <ctime>
 #include <string>
@@ -50,16 +50,12 @@ void loadSats(std::string tlefile) {
 	std::cout << "Satellites loaded" << std::endl;
 }
 
-void computeLoop(std::vector<std::vector<sat>::iterator>& shownSats, station& sta, size_t selsatidx) {
-	while (true) {
-		computeSats(shownSats, sta, selsatidx);
-	}
-}
-
-void computeSats(std::vector<std::vector<sat>::iterator>& shownSats, station& sta, size_t selsatidx) {
+compute_stats computeSats(std::vector<std::vector<sat>::iterator>& shownSats, station& sta, size_t selsatidx) {
+	compute_stats stats;
 	timeval tv_now = getTime();
-	gmtime_r(&tv_now.tv_sec, &utctime);
-	localtime_r(&tv_now.tv_sec, &loctime);
+	gmtime_r(&tv_now.tv_sec, &stats.utctime);
+	localtime_r(&tv_now.tv_sec, &stats.loctime);
+	stats.timeNow = tv_now.tv_sec;
 
 	auto start = std::chrono::high_resolution_clock::now();
 
@@ -125,7 +121,6 @@ void computeSats(std::vector<std::vector<sat>::iterator>& shownSats, station& st
 
 		// Find AOS radius
 		sat.aosRadiusAngle = TODEG * acos(EARTHR / (EARTHR + sat.geo.height));
-		
 
 		if (i == selsatidx) {
 			// Compute orbit
@@ -142,17 +137,13 @@ void computeSats(std::vector<std::vector<sat>::iterator>& shownSats, station& st
 				t_geo = georadtodeg(t_geo);
 				sat.geoOrbit.points.push_back(t_geo);
 			}
-
-			// Set AOS LOS times
-			gmtime_r(&sat.aos, &aosutctime);
-			localtime_r(&sat.aos, &aosloctime);
-			gmtime_r(&sat.los, &losutctime);
-			localtime_r(&sat.los, &losloctime);
 		}
 
 		sgdp4_prediction_finalize(&pred);
 	}
 
 	auto stop = std::chrono::high_resolution_clock::now();
-	g_computeTime = stop - start;
+	stats.computeTime = (stop - start).count() / 1000000000.0f;
+
+	return stats;
 }

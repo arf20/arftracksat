@@ -1,6 +1,6 @@
 #pragma once
 
-#include "sgdp4/sgdp4-types.h"
+#include "sgdp4/sgdp4.h"
 
 #include <vector>
 #include <string>
@@ -68,4 +68,53 @@ inline xyz_t xyzunit(xyz_t v) {
 
 inline double xyzdot(xyz_t left, xyz_t right) {
   return ((left.x * right.x) + (left.y * right.y) + (left.z * right.z));
+}
+
+inline xyz_t geoToECEF(xyz_t geo) {
+    xyz_t t;
+    geo.lat = geo.lat * TORAD;
+    geo.lon = geo.lon * TORAD;
+    xyz_geodetic_to_ecef(&geo, &t);
+    return t;
+}
+
+inline xyz_t ECEFToGeo(xyz_t pos) {
+    xyz_t t;
+    xyz_ecef_to_geodetic(&pos, &t);
+    t.lat = t.lat * TODEG;
+    t.lon = t.lon * TODEG;
+    return t;
+}
+
+#define EARTHECC2 .006694385000 /* Eccentricity of Earth^2 */
+
+inline xyz_t uLat(xyz_t geo) {
+    geo.lat = geo.lat * TORAD;
+    geo.lon = geo.lon * TORAD;
+    return xyzunit(xyz_t{
+        (- EARTHR - geo.height) * cos(geo.lon) * sin(geo.lat),
+        (- EARTHR - geo.height) * sin(geo.lon) * sin(geo.lat),
+        
+        ((EARTHR * EARTHECC2 * (-EARTHECC2 + 1) * sin(geo.lat) * sin(geo.lat) * cos(geo.lat))
+        / pow(((-EARTHECC2 * sin(geo.lat) * sin(geo.lat)) + 1), 3.0f/2.0f))
+        + ((((EARTHR * (-EARTHECC2 + 1))
+        / sqrt((-EARTHECC2 * sin(geo.lat) * sin(geo.lat)) + 1)) + geo.height)
+        * cos(geo.lat))
+
+    });
+}
+
+inline xyz_t uLon(xyz_t geo) {
+    geo.lat = geo.lat * TORAD;
+    geo.lon = geo.lon * TORAD;
+    return xyzunit(xyz_t{
+        (- EARTHR - geo.height) * cos(geo.lat) * sin(geo.lon),
+        (EARTHR + geo.height) * cos(geo.lat) * cos(geo.lon),
+        0.0f
+    });
+}
+
+inline xyz_t uVert(xyz_t geo) {
+    xyz_t v = geoToECEF(geo);
+    return xyzunit(v);
 }
