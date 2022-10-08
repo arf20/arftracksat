@@ -22,9 +22,7 @@
 #include <filesystem>
 #include <thread>
 
-// sat.cpp exports
-//float g_computeTime;
-int g_selsatidx = 0;     // index of shownSats
+int selsatidx = 0;     // index of shownSats
 
 // File Globals
 static GLfloat width = 1;
@@ -37,28 +35,29 @@ static station g_sta;
 static std::vector<shape> continents;
 static obj earth;
 
+// variable stuff
 static float timeBase = 0.0f;
 
-static bool mode = false;     // false = 2D, true = 3D
+static bool mode = false;                       // false = 2D, true = 3D
 
 #define SATLIST_SIZE    10
 static int selsatoff = 0;
 
-static float scale_2d = 360.0f;          // perfect for 480 height
-static float offx = 0.0f;
-static float offy = 0.0f;
+static float scale_2d = 360.0f;                 // perfect for 480 height
+static float offx = mercatorWidth(scale_2d) / 2.0f;
+static float offy = mercatorHeight(scale_2d) / 2.0f;
 
-static float scale_3d = 5.0f / EARTHR;
-static float scale_model = EARTHR / 100.0f;
+static float scale_3d = 5.0f / EARTHR;          // make it 5 times smaller
+static float scale_model = EARTHR / 100.0f;     // model radius is like 100
 static float rotatex;
 static float rotatez;
 
-#define ROT_DEG 5.0f
+#define ROT_DEG 5.0f                            // rotate step
 
 compute_stats compstats;
 
 // Copute thing
-void computeLoop(std::vector<std::vector<sat>::iterator>& shownSats, station& sta, size_t selsatidx) {
+void computeLoop(std::vector<std::vector<sat>::iterator>& shownSats, station& sta) {
     while (true) {
 		compstats = computeSats(shownSats, sta, selsatidx);
 	}
@@ -70,7 +69,7 @@ void keyboard(unsigned char key, int x, int y) {
     if (key >= '1' && key <= '8') {
         // Select satellite 1-9
         if (key - '1' < g_shownSats.size())
-            g_selsatidx = key - '1';
+            selsatidx = key - '1';
         return;
     }
 
@@ -88,15 +87,15 @@ void keyboard(unsigned char key, int x, int y) {
             mode = true;
         break;
         case '9':
-        if (g_selsatidx < g_shownSats.size() - 1)
-            g_selsatidx++;
-        if (g_selsatidx > selsatoff + SATLIST_SIZE - 1)
+        if (selsatidx < g_shownSats.size() - 1)
+            selsatidx++;
+        if (selsatidx > selsatoff + SATLIST_SIZE - 1)
             selsatoff++;
         break;
         case '0':
-        if (g_selsatidx > 0)
-            g_selsatidx--;
-        if (g_selsatidx < selsatoff)
+        if (selsatidx > 0)
+            selsatidx--;
+        if (selsatidx < selsatoff)
             selsatoff--;
         break;
         case 'a':   // rotate
@@ -149,11 +148,11 @@ void render2d() {
     // Draw parallels and meridians                                                     
     for (float a = -180; a <= 180; a += 20) {
         DrawGeoLine({a, -80.0f}, {a, 80.0f}, scale_2d, offx, offy, C_BLUE);
-        DrawString(geoToMercator({ a, -80.0f }, scale_2d, offx, offy) + xyz_t{0.0f, TEXT_HEIGHT}, std::to_string((int)a), C_BLUE);
+        DrawString(geoToMercatorCentered({ a, -80.0f }, scale_2d, offx, offy) + xyz_t{0.0f, TEXT_HEIGHT}, std::to_string((int)a), C_BLUE);
     }
     for (float a = -80; a <= 80; a += 20) {
         DrawGeoLine({-180.0f, a}, {180.0f, a}, scale_2d, offx, offy, C_BLUE);
-        DrawString(geoToMercator({ 180.0f, a }, scale_2d, offx, offy) + xyz_t{10.0f, 0.0f}, std::to_string((int)a), C_BLUE);
+        DrawString(geoToMercatorCentered({ 180.0f, a }, scale_2d, offx, offy) + xyz_t{10.0f, 0.0f}, std::to_string((int)a), C_BLUE);
     }
 
     // Draw map                                                           
@@ -162,16 +161,16 @@ void render2d() {
     }
 
     // Draw sta                                                            
-    xyz_t stapos = geoToMercator(g_sta.geo, scale_2d, offx, offy);
+    xyz_t stapos = geoToMercatorCentered(g_sta.geo, scale_2d, offx, offy);
     DrawShape(stashape, stapos, 2.5, C_GREEN);
 
     // Draw sats
     for (int i = 0; i < g_shownSats.size(); i++) {
         sat& sat = *g_shownSats[i];
-        xyz_t satpos = geoToMercator(sat.geo, scale_2d, offx, offy);
+        xyz_t satpos = geoToMercatorCentered(sat.geo, scale_2d, offx, offy);
 
         xyz_t c = C_RED;
-        if (i == g_selsatidx) {
+        if (i == selsatidx) {
             c = C_YELLOW;
 
             // Draw orbit for selected sat
@@ -217,7 +216,7 @@ void render3d() {
         xyz_t satpos = geoToECEF(sat.geo) * scale_3d;
 
         xyz_t c = C_RED;
-        if (i == g_selsatidx) {
+        if (i == selsatidx) {
             c = C_YELLOW;
 
             // Draw orbit for selected sat
@@ -297,7 +296,7 @@ void render() {
     // with screen coordinates
     glTranslatef(-1.0, 1.0f, 0.0f);
     glScalef(2.0f/width, -2.0f/height, 0.0f);
-    legacy_gl_ui(width, height, deltaTime, compstats.computeTime, mode, compstats.timeNow, g_sta, g_shownSats, g_selsatidx);
+    legacy_gl_ui(width, height, deltaTime, compstats.computeTime, mode, compstats.timeNow, g_sta, g_shownSats, selsatidx);
 
     glutSwapBuffers();
 }
@@ -349,7 +348,7 @@ void startGraphics(std::vector<std::vector<sat>::iterator>& shownSats, station& 
     rotatex = g_sta.geo.lat;
     rotatez = g_sta.geo.lon;
 
-    std::thread computeThread(computeLoop, std::ref(shownSats), std::ref(sta), g_selsatidx);
+    std::thread computeThread(computeLoop, std::ref(shownSats), std::ref(sta));
 
     glutMainLoop();                     // Enter the infinite event-processing loop
 }

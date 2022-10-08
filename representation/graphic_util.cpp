@@ -57,9 +57,26 @@ xyz_t geoToMercator(xyz_t geo, float scale, float offx, float offy) {
 	return t;
 }
 
+float mercatorWidth(float scale) {
+    xyz_t t = geoToMercator({179.99f, -89.99f, 0.0f}, scale, 0.0f, 0.0f);
+    return t.x;
+}
+
+float mercatorHeight(float scale) {
+    xyz_t t = geoToMercator({179.99f, -89.99f, 0.0f}, scale, 0.0f, 0.0f);
+    return t.y / 2.0f;      // tbh idk
+}
+
+xyz_t geoToMercatorCentered(xyz_t geo, float scale, float offx, float offy) {
+    xyz_t t = geoToMercator(geo, scale, offx, offy);
+    t.x -= mercatorWidth(scale) / 2.0f;
+    t.y -= mercatorHeight(scale) / 2.0f;
+    return t;
+}
+
 void DrawGeoLine(xyz_t geo1, xyz_t geo2, float scale, float offx, float offy, xyz_t c) {
-	xyz_t t1 = geoToMercator(geo1, scale, offx, offy);
-	xyz_t t2 = geoToMercator(geo2, scale, offx, offy);
+	xyz_t t1 = geoToMercatorCentered(geo1, scale, offx, offy);
+	xyz_t t2 = geoToMercatorCentered(geo2, scale, offx, offy);
 	DrawLine(t1, t2, c);
 }
 

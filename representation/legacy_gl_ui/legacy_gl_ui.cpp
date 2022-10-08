@@ -15,7 +15,7 @@ void legacy_gl_ui(float width, float height, float deltaTime, float computeTime,
     // Draw info
     float fps = 1 / deltaTime;
     std::string modestr = mode ? "PERSPECTIVE" : "MERCATOR";
-    DrawString({20, 20}, "FPS: " + toString(fps) + "  COMP TIME: " + toString(computeTime) + "ms  MODE: " + modestr);
+    DrawString({20, 20}, "FPS: " + toString(fps) + "  COMP TIME: " + toString(computeTime * 1000.0f) + "ms  MODE: " + modestr);
 
 	// Station column
 	xyz_t curpos{ 200.0f + (width / 2.0f), 50.0 };
