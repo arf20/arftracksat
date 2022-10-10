@@ -227,8 +227,8 @@ void render3d() {
         xyz_t geo = sat.geo;
         geo.height = 0.0f;
         xyz_t u_lat = uLat(geo); xyz_t u_lon = uLon(geo); xyz_t u_vert = uVert(geo);
-        float circler = EARTHR * sin(TORAD * sat.aosRadiusAngle);
-        float circlec = EARTHR * cos(TORAD * sat.aosRadiusAngle);
+        float circler = (EARTHR + 5.0f) * sin(TORAD * sat.aosRadiusAngle);
+        float circlec = (EARTHR + 5.0f) * cos(TORAD * sat.aosRadiusAngle);  // draw circles 5km above sea level and +5km radius to prevent clipping
         xyz_t P = u_vert * circlec;
 
         float finestep = 5.0f;
