@@ -1,10 +1,13 @@
 {
 	"tleroot": "/tmp/tle/",
-	"tlefile": "weather.txt",
+	"tlefile": "gp.php?GROUP=starlink&FORMAT=tle",
+	"mapfile": "/usr/local/share/arftracksat/map.json",
+	"objfile": "/usr/local/share/arftracksat/earth.obj",
 	
 	"tlesources": [
-		"http://celestrak.com/NORAD/elements/weather.txt",
-		"http://celestrak.com/NORAD/elements/noaa.txt"
+		"http://celestrak.org/NORAD/elements/weather.txt",
+		"http://celestrak.org/NORAD/elements/noaa.txt",
+		"http://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=tle"
 	],
 	
 	"updatePerdiod": 1000,
@@ -17,10 +20,6 @@
 	},
 	
 	"show": [
-		"NOAA 15",
-		"NOAA 18",
-		"NOAA 19",
-		"METEOR-M 2"
 	],
 	
 	"columns": [
