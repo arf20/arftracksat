@@ -21,8 +21,9 @@ echo 'Maintainer: arf20 <aruizfernandez05@gmail.com>' >> arftracksat_$ver/DEBIAN
 echo 'Description: CLI satellite tracking software' >> arftracksat_$ver/DEBIAN/control
 
 # copy files
-cp build/src/arftracksat arftracksat_$ver/usr/local/bin/
+cp build/arftracksat arftracksat_$ver/usr/local/bin/
 cp config.json arftracksat_$ver/usr/local/etc/arftracksat/
+cp assets/* arftracksat_$ver/usr/local/share/arftracksat/
 
 # set permissions
 chmod 755 -R arftracksat_$ver/
