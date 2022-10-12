@@ -12,7 +12,6 @@
 #include "../core/sat.hpp"
 
 #include "asset_loader.hpp"
-#include "legacy_gl_ui/legacy_gl_ui.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -39,6 +38,7 @@ static obj earth;
 static float timeBase = 0.0f;
 
 static bool mode = false;                       // false = 2D, true = 3D
+static bool prevmode = true;
 
 #define SATLIST_SIZE    10
 static int selsatoff = 0;
@@ -253,21 +253,15 @@ void render() {
     timeBase = glTimeNow;
 
     if (mode) { // 3D
-        // set viewport to square
-        glViewport(0, 0, height, height);
         // set perspective projection
         glMatrixMode(GL_PROJECTION);  // To operate on the Projection matrix
         glLoadIdentity();             // Reset
-        gluPerspective(45.0f, height / height, 0.1f, 100.0f);
-	    //glOrtho(0.0f, width, height, 0.0f, 0.1f, 100.0f);
+        gluPerspective(45.0f, width / height, 0.1f, 100.0f);
+        //glOrtho(0.0f, width, height, 0.0f, 0.1f, 100.0f);
 
         // render 3D scene
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
-        render3d();
-
-        // reset viewport
-        glViewport(0, 0, width, height);
     }
     else {  // 2D
         // set orthogonal projection
@@ -281,22 +275,12 @@ void render() {
         // with screen coordinates
         glTranslatef(-1.0, 1.0f, 0.0f);
         glScalef(2.0f/width, -2.0f/height, 0.0f);
-        render2d();
     }
 
-    // COMMON between modes, also in 2D
-    // set orthogonal projection
-    glMatrixMode(GL_PROJECTION);  // To operate on the Projection matrix
-    glLoadIdentity();             // Reset
-
-    // render 2D scene on top
-    glClear(GL_DEPTH_BUFFER_BIT);   // clear depth buffer
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    // with screen coordinates
-    glTranslatef(-1.0, 1.0f, 0.0f);
-    glScalef(2.0f/width, -2.0f/height, 0.0f);
-    legacy_gl_ui(width, height, deltaTime, compstats.computeTime, mode, compstats.timeNow, g_sta, g_shownSats, selsatidx);
+    if (mode) // 3D
+        render3d();
+    else      // 2D
+        render2d();
 
     glutSwapBuffers();
 }
