@@ -1,4 +1,4 @@
-#include "graphics.hpp"
+#include "representation.hpp"
 
 #include <GL/freeglut.h>
 #include <GL/gl.h>
@@ -243,7 +243,10 @@ void render3d() {
     }
 }
 
-void render() {
+void renderRepresentation(int w, int h) {
+    width = w;
+    height = h;
+
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);                   // Set background color to black and opaque
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);     // Clear the color and depth buffers
 
@@ -269,7 +272,6 @@ void render() {
         glLoadIdentity();             // Reset
 
         // render 2D scene on top
-        glClear(GL_DEPTH_BUFFER_BIT);   // clear depth buffer
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
         // with screen coordinates
@@ -281,20 +283,9 @@ void render() {
         render3d();
     else      // 2D
         render2d();
-
-    glutSwapBuffers();
 }
 
-void reshape(GLsizei l_width, GLsizei l_height) {
-    // Compute aspect ratio of the new window
-    if (l_height == 0) l_height = 1;                // To prevent divide by 0
-    width = l_width; height = l_height;
-
-    // Set the viewport to cover the new window
-    glViewport(0, 0, width, height);
-}
-
-void startGraphics(std::vector<std::vector<sat>::iterator>& shownSats, station& sta, std::string mapfile, std::string objfile) {
+void startRepresentation(std::vector<std::vector<sat>::iterator>& shownSats, station& sta, std::string mapfile, std::string objfile) {
     // Copy stuff to global scope
     g_shownSats = shownSats;
     g_sta = sta;
@@ -304,35 +295,9 @@ void startGraphics(std::vector<std::vector<sat>::iterator>& shownSats, station& 
     // Load 3D earth
     earth = loadEarth(objfile);
 
-    // Init glut
-    int argc = 0;
-    char **argv = NULL;
-    glutInit(&argc, argv);
-    glutSetOption(GLUT_MULTISAMPLE, 4); // MSAA
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | GLUT_MULTISAMPLE);
-    glutInitContextVersion(3, 0);
-    glutInitWindowSize(640, 480);
-    glutCreateWindow("arftracksat graphic");
-
-    // set callbacks
-    glutDisplayFunc(render);
-    glutIdleFunc(render);
-    glutReshapeFunc(reshape);
-    glutKeyboardFunc(keyboard);
-
-    // enable depth test
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
-    
-    GLint iMultiSample = 0;
-    GLint iNumSamples = 0;
-    glGetIntegerv(GL_SAMPLE_BUFFERS, &iMultiSample);
-    glGetIntegerv(GL_SAMPLES, &iNumSamples);
-
     rotatex = g_sta.geo.lat;
     rotatez = g_sta.geo.lon;
 
     std::thread computeThread(computeLoop, std::ref(shownSats), std::ref(sta));
-
-    glutMainLoop();                     // Enter the infinite event-processing loop
+    computeThread.detach();
 }

@@ -5,7 +5,8 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 CONFIG += c++17 object_parallel_to_source
 
 INCLUDEPATH += \
-    common/sgdp4/
+    common/sgdp4/ \
+    src/
 
 SGDP4_HEADERS += \
     common/sgdp4/sigutils/log.h \
@@ -31,19 +32,21 @@ HEADERS += \
     representation/asset_loader.hpp \
     representation/colors.hpp \
     representation/graphic_util.hpp \
-    representation/graphics.hpp \
+    representation/representation.hpp \
     representation/shapes.hpp \
     representation/tiny_obj_loader.h \
-    src/mainwindow.h
+    src/mainwindow.h \
+    src/representationwidget.h
 
 SOURCES += \
     $$SGDP4_SOURCES \
     core/sat.cpp \
     representation/asset_loader.cpp \
     representation/graphic_util.cpp \
-    representation/graphics.cpp \
+    representation/representation.cpp \
     src/main.cpp \
     src/mainwindow.cpp \
+    src/representationwidget.cpp \
     src/sysutil.cpp
 
 LIBS += -lpthread -lcurl -lcurlpp -ldl -lGL -lGLU -lglut

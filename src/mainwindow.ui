@@ -16,7 +16,7 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0">
-     <widget class="QOpenGLWidget" name="openGLWidget"/>
+     <widget class="RepresentationWidget" name="repWidget"/>
     </item>
    </layout>
   </widget>
@@ -32,6 +32,13 @@
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>RepresentationWidget</class>
+   <extends>QOpenGLWidget</extends>
+   <header>representationwidget.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
