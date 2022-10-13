@@ -1,7 +1,7 @@
 #include "sat.hpp"
 
 //#include "graphics.hpp"
-#include "../common/util.hpp"
+#include "../common/sysutil.hpp"
 #include "../common/sgdp4/sgdp4.h"
 
 #include <ctime>
@@ -59,7 +59,7 @@ compute_stats computeSats(std::vector<std::vector<sat>::iterator>& shownSats, st
 
 	auto start = std::chrono::high_resolution_clock::now();
 
-	for (int i = 0; i < shownSats.size(); i++) {
+    for (size_t i = 0; i < shownSats.size(); i++) {
 		timeval t = tv_now;
 		
 		sat& sat = *shownSats[i];

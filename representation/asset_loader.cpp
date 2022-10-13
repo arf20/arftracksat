@@ -79,7 +79,7 @@ obj loadEarth(std::string& objpath) {
     o.materials = reader.GetMaterials();
 
 	int polys = 0;
-	for (int i = 0; i < o.shapes.size(); i++)
+    for (size_t i = 0; i < o.shapes.size(); i++)
 		polys += o.shapes[i].mesh.indices.size();
 
 	std::cout << "Earth loaded [" << polys << " polygons]" << std::endl;		

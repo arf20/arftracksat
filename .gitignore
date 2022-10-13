@@ -3,3 +3,4 @@
 build/
 arftracksat_*/
 *.deb
+*.user

@@ -20,7 +20,7 @@ std::string toString(float n) {
 void DrawString(xyz_t pos, std::string str, xyz_t c) {
     glColor3f(c.x, c.y, c.z);
     glRasterPos3f(pos.x, pos.y, pos.z);
-    for (int i = 0; i < str.length(); i++)
+    for (size_t i = 0; i < str.length(); i++)
         glutBitmapCharacter(GLUT_BITMAP_9_BY_15, str[i]);
 }
 
@@ -36,7 +36,7 @@ void DrawLine(xyz_t a, xyz_t b, xyz_t c) {
 
 void DrawShape(std::vector<xyz_t>& shape, xyz_t pos, float scale, xyz_t c) {
     if (shape.size() == 0) return;
-	for (int i = 0; i < shape.size() - 1; i++) {
+    for (size_t i = 0; i < shape.size() - 1; i++) {
 		xyz_t v1{ shape[i].x, -shape[i].y };
 		xyz_t v2{ shape[i + 1].x, -shape[i + 1].y };
 		DrawLine(pos + (v1 * scale), pos + (v2 * scale), c);
