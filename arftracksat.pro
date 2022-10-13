@@ -33,7 +33,8 @@ HEADERS += \
     representation/graphic_util.hpp \
     representation/graphics.hpp \
     representation/shapes.hpp \
-    representation/tiny_obj_loader.h
+    representation/tiny_obj_loader.h \
+    src/mainwindow.h
 
 SOURCES += \
     $$SGDP4_SOURCES \
@@ -42,6 +43,7 @@ SOURCES += \
     representation/graphic_util.cpp \
     representation/graphics.cpp \
     src/main.cpp \
+    src/mainwindow.cpp \
     src/sysutil.cpp
 
 LIBS += -lpthread -lcurl -lcurlpp -ldl -lGL -lGLU -lglut
@@ -49,3 +51,6 @@ LIBS += -lpthread -lcurl -lcurlpp -ldl -lGL -lGLU -lglut
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+FORMS += \
+    src/mainwindow.ui

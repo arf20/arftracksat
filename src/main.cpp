@@ -2,6 +2,14 @@
 #include "../core/sat.hpp"
 #include "../representation/graphics.hpp"
 
+#include <QApplication>
+#include "mainwindow.h"
+
+#include <curl/curl.h>
+#include <curlpp/cURLpp.hpp>
+#include <curlpp/Easy.hpp>
+#include <curlpp/Options.hpp>
+
 #include <ctime>
 #include <thread>
 #include <iostream>
@@ -12,12 +20,6 @@
 #include <chrono>
 #include <vector>
 #include <cinttypes>
-
-
-#include <curl/curl.h>
-#include <curlpp/cURLpp.hpp>
-#include <curlpp/Easy.hpp>
-#include <curlpp/Options.hpp>
 
 #include <nlohmann/json.hpp>
 using namespace nlohmann;
@@ -199,8 +201,12 @@ int main(int argc, char **argv) {
 
 	// ========================= SETUP DONE =========================
 
-	// start graphics
-	startGraphics(shownSats, sta, mapfile, objfile);
+    // start Qt main window
+    QApplication app(argc, argv);
+    MainWindow mainwindow;
+
+    mainwindow.show();
+    app.exec();
 
 	// never reached ;)
 	exit(0);
