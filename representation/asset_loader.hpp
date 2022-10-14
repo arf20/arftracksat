@@ -2,15 +2,24 @@
 
 #include "../common/types-defs.hpp"
 
-#include "tiny_obj_loader.h"
+#include <GL/freeglut.h>
+#include <GL/gl.h>
 
 #include <vector>
 
-struct obj {
-    tinyobj::attrib_t attrib;
-    std::vector<tinyobj::shape_t> shapes;
-    std::vector<tinyobj::material_t> materials;
+struct Point {
+    float x;
+    float y;
+    float z;
+    float u;
+    float v;
+};
+
+struct TexturedSphere {
+    Point *points;
+    size_t npoints;
+    GLuint texture;
 };
 
 std::vector<shape> loadMap(const std::string& mapfilepath);
-obj loadEarth(std::string& objpath);
+TexturedSphere loadEarthTextureSphere(const std::string& path);

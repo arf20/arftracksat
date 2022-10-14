@@ -6,4 +6,4 @@
 #include <ctime>
 #include <string>
 
-void startGraphics(std::vector<std::vector<sat>::iterator>& shownSats, station& sta, std::string mapfile, std::string objfile);
+void startGraphics(std::vector<std::vector<sat>::iterator>& shownSats, station& sta, std::string mapfile, std::string texturefile);

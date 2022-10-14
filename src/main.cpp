@@ -76,14 +76,13 @@ bool validateConfig() {
 		return false;
 	}
 
-	if (!config.contains("objfile")) { std::cout << "objfile not defined in config" << std::endl; return false; }
-	if (config["objfile"].type() != json::value_t::string) { std::cout << "objfile is not a string" << std::endl; return false; }
-	std::string objfile = config["objfile"];
-	if (!std::filesystem::exists(objfile)) { 
-		std::cout << "objfile does not exist: " << objfile << std::endl;
+	if (!config.contains("texturefile")) { std::cout << "texturefile not defined in config" << std::endl; return false; }
+	if (config["texturefile"].type() != json::value_t::string) { std::cout << "texturefile is not a string" << std::endl; return false; }
+	std::string texturefile = config["texturefile"];
+	if (!std::filesystem::exists(texturefile)) { 
+		std::cout << "texturefile does not exist: " << texturefile << std::endl;
 		return false;
 	}
-
 
 	return true;
 }
@@ -193,14 +192,12 @@ int main(int argc, char **argv) {
 	sta.vel.z = 0.0;
 
 	std::string mapfile = std::string(config["mapfile"]);
-	std::string objfile = std::string(config["objfile"]);
-
-	std::this_thread::sleep_for(std::chrono::milliseconds(1000));	// Give user time to read
+	std::string texturefile = std::string(config["texturefile"]);
 
 	// ========================= SETUP DONE =========================
 
 	// start graphics
-	startGraphics(shownSats, sta, mapfile, objfile);
+	startGraphics(shownSats, sta, mapfile, texturefile);
 
 	// never reached ;)
 	exit(0);

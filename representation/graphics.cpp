@@ -33,7 +33,7 @@ static station g_sta;
 
 // assets
 static std::vector<shape> continents;
-static obj earth;
+static TexturedSphere earth;
 
 // variable stuff
 static float timeBase = 0.0f;
@@ -206,7 +206,7 @@ void render3d() {
     glRotatef(rotatex - 90.0f, 1.0f, 0.0f, 0.0f);
     glRotatef(-rotatez - 90.0f, 0.0f, 0.0f, 1.0f);
 
-    DrawObj(earth, scale_model * scale_3d, 90.0f);
+    DrawTexturedSphere(earth, EARTHR * scale_3d, 90.0f);
 
     DrawBillboardShape3(stashape, geoToECEF(g_sta.geo) * scale_3d, 0.05f, C_GREEN);
 
@@ -310,15 +310,10 @@ void reshape(GLsizei l_width, GLsizei l_height) {
     glViewport(0, 0, width, height);
 }
 
-void startGraphics(std::vector<std::vector<sat>::iterator>& shownSats, station& sta, std::string mapfile, std::string objfile) {
+void startGraphics(std::vector<std::vector<sat>::iterator>& shownSats, station& sta, std::string mapfile, std::string texturefile) {
     // Copy stuff to global scope
     g_shownSats = shownSats;
     g_sta = sta;
-
-    // Load map
-    continents = loadMap(mapfile);
-    // Load 3D earth
-    earth = loadEarth(objfile);
 
     // Init glut
     int argc = 0;
@@ -349,6 +344,11 @@ void startGraphics(std::vector<std::vector<sat>::iterator>& shownSats, station& 
     rotatez = g_sta.geo.lon;
 
     std::thread computeThread(computeLoop, std::ref(shownSats), std::ref(sta));
+
+    // Load map
+    continents = loadMap(mapfile);
+    // Load 3D earth
+    earth = loadEarthTextureSphere(texturefile);
 
     glutMainLoop();                     // Enter the infinite event-processing loop
 }

@@ -60,6 +60,9 @@ General
 ## Troubleshooting
 If no sats are found in the TLE, celestrack (or similar) probably returned no TLEs but rather a redirect or something like that instead.
 
+## Assets
+The cylindrical earth texture is world.topo.bathy.200412.3x5400x2700 from NASA's https://visibleearth.nasa.gov/images/73909/december-blue-marble-next-generation-w-topography-and-bathymetry
+
 # Where Windows?
 I just broke support lol
 

@@ -6,6 +6,9 @@
 
 #include <string>
 
+#include <GL/freeglut.h>
+#include <GL/gl.h>
+
 #define TEXT_HEIGHT     15
 
 std::string toString(float n);
@@ -23,4 +26,4 @@ void DrawGeoLine3(xyz_t geo1, xyz_t geo2, float scale, xyz_t c = C_WHITE);
 void DrawGeoLines3(const std::vector<xyz_t>& lines, float scale, xyz_t c = C_WHITE);
 void DrawGeoShape3(const std::vector<xyz_t>& shape, float scale, xyz_t c = C_WHITE);
 void DrawBillboardShape3(std::vector<xyz_t>& shape, xyz_t pos, float scale, xyz_t c = C_WHITE);
-void DrawObj(const obj& o, float scale, float roty);
+void DrawTexturedSphere(TexturedSphere sphere, float radius, float roty);

@@ -1,8 +1,8 @@
 {
 	"tleroot": "/tmp/tle/",
-	"tlefile": "gp.php?GROUP=starlink&FORMAT=tle",
+	"tlefile": "weather.txt",
 	"mapfile": "/usr/local/share/arftracksat/map.json",
-	"objfile": "/usr/local/share/arftracksat/earth.obj",
+	"texturefile": "/usr/local/share/arftracksat/earth.png",
 	
 	"tlesources": [
 		"http://celestrak.org/NORAD/elements/weather.txt",

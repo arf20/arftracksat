@@ -5,9 +5,6 @@
 
 #include "asset_loader.hpp"
 
-#include <GL/freeglut.h>
-#include <GL/gl.h>
-
 // Text rendering (GLUT)
 
 std::string toString(float n) {
@@ -147,42 +144,23 @@ void DrawBillboardShape3(std::vector<xyz_t>& shape, xyz_t pos, float scale, xyz_
     glLoadMatrixf((float*)&view);
 }
 
-void DrawObj(const obj& o, float scale, float roty) {
-    // correct model orientation
-    glRotatef(roty, 1.0f, 0.0f, 0.0f);
+void DrawTexturedSphere(TexturedSphere sphere, float radius, float roty) {
+    //glPolygonMode(GL_FRONT, GL_FILL);
+    
+    //glBindTexture(GL_TEXTURE_2D, sphere.texture);
 
-    // Loop over shapes
-    for (size_t s = 0; s < o.shapes.size(); s++) {
-        glBegin(GL_TRIANGLES);
-
-        // Loop over faces(polygon)
-        size_t index_offset = 0;
-        for (size_t f = 0; f < o.shapes[s].mesh.num_face_vertices.size(); f++) {
-            // per-face material
-            int material = o.shapes[s].mesh.material_ids[f];
-            if (material == 0) glColor3f(C_OCEAN);
-            if (material == 1) glColor3f(C_LAND);
-            if (material == 2) glColor3f(1.0f, 1.0f, 1.0f);
-
-            size_t fv = size_t(o.shapes[s].mesh.num_face_vertices[f]);
-
-            // Loop over vertices in the face.
-            for (size_t v = 0; v < fv; v++) {
-                tinyobj::index_t idx = o.shapes[s].mesh.indices[index_offset + v];  // vertex idx
-
-                // access to vertex
-                tinyobj::real_t vx = o.attrib.vertices[3 * size_t(idx.vertex_index) + 0];
-                tinyobj::real_t vy = o.attrib.vertices[3 * size_t(idx.vertex_index) + 1];
-                tinyobj::real_t vz = o.attrib.vertices[3 * size_t(idx.vertex_index) + 2];
-
-                // draw triangle
-                glVertex3f(vx * scale, vy * scale, vz * scale);
-            }
-            index_offset += fv;
-        }
-
-        glEnd();
+    glPushMatrix();
+    glRotatef(180.0f, 0.0f, 0.0f, 1.0f);
+    glEnable(GL_TEXTURE_2D);
+    glBegin(GL_TRIANGLES);
+    for (int i = 0; i < sphere.npoints; i++) {
+        //glColor3f(sphere.points[i].u, sphere.points[i].v, 0.0f);
+        glTexCoord2f(sphere.points[i].u, sphere.points[i].v);
+        glVertex3f(sphere.points[i].x * radius, sphere.points[i].y * radius, sphere.points[i].z * radius);
     }
+    glEnd();
+    glDisable(GL_TEXTURE_2D);
+    glPopMatrix();
 
-    glRotatef(-roty, 1.0f, 0.0f, 0.0f);
+    //glPolygonMode(GL_FRONT, GL_LINE);
 }
