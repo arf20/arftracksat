@@ -73,8 +73,9 @@ Point sphere_point(float u, float v) {
 }
 
 // Create array of points with quads that make a unit sphere.
-std::vector<Point> sphere(int hSize, int vSize) {
-    std::vector<Point> pt;
+Point *sphere(int hSize, int vSize) {
+    Point *pt = new Point[hSize * vSize * 6];
+	int idx = 0;
     for (int i = 0; i < hSize; i++) {
         for (int j = 0; j < vSize; j++) {
             float u0 = (float)i / (float)hSize;
@@ -82,12 +83,12 @@ std::vector<Point> sphere(int hSize, int vSize) {
             float v0 = (float)j / (float)vSize;
             float v1 = (float)(j + 1) / float(vSize);
             // Create quad as two triangles.
-            pt.push_back(sphere_point(u0, v0));
-            pt.push_back(sphere_point(u1, v0));
-            pt.push_back(sphere_point(u0, v1));
-            pt.push_back(sphere_point(u0, v1));
-            pt.push_back(sphere_point(u1, v0));
-            pt.push_back(sphere_point(u1, v1));
+            pt[idx] = sphere_point(u0, v0); idx++;
+            pt[idx] = sphere_point(u1, v0); idx++;
+            pt[idx] = sphere_point(u0, v1); idx++;
+            pt[idx] = sphere_point(u0, v1); idx++;
+            pt[idx] = sphere_point(u1, v0); idx++;
+            pt[idx] = sphere_point(u1, v1); idx++;
         }
     }
 	return pt;
@@ -124,25 +125,18 @@ TexturedSphere loadEarthTextureSphere(const std::string& path) {
 	GLuint texture;
 	glGenTextures(1, &texture);
 	glBindTexture(GL_TEXTURE_2D, texture);
-	//glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);    
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	GL_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data));
-	//glGenerateMipmap(GL_TEXTURE_2D);
-	//gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, width, height, GL_RGB, GL_UNSIGNED_BYTE, data);
 	stbi_image_free(data);
-	//if (texture == 0) { std::cout << "Error loading texture " << path << std::endl; exit(1); }
 
 	glActiveTexture(texture);
 
 	ts.texture = texture;
-
-	auto spherepoints = sphere(32, 32);
-	ts.npoints = spherepoints.size();
-	ts.points = new Point[ts.npoints];
-	std::copy(spherepoints.begin(), spherepoints.begin() + ts.npoints, ts.points);
+	ts.npoints = 32 * 32 * 6;
+	ts.points = sphere(32, 32);
 
 	std::cout << "Earth loaded [" << ts.npoints << " points]" << std::endl;
 

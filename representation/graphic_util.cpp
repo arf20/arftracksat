@@ -23,24 +23,16 @@ void DrawString(xyz_t pos, std::string str, xyz_t c) {
 
 // Primitive drawing functions
 
-void DrawLine(xyz_t a, xyz_t b, xyz_t c) {
-    glBegin(GL_LINES);
-    glColor3f(c.x, c.y, c.z);
-    glVertex3f(a.x, a.y, a.z);
-    glVertex3f(b.x, b.y, b.z);
-    glEnd();
-}
-
 void DrawShape(std::vector<xyz_t>& shape, xyz_t pos, float scale, xyz_t c) {
     if (shape.size() == 0) return;
-	for (int i = 0; i < shape.size() - 1; i++) {
+    glBegin(GL_LINE_LOOP);
+    glColor3f(c.x, c.y, c.z);
+	for (int i = 0; i < shape.size(); i++) {
 		xyz_t v1{ shape[i].x, -shape[i].y };
-		xyz_t v2{ shape[i + 1].x, -shape[i + 1].y };
-		DrawLine(pos + (v1 * scale), pos + (v2 * scale), c);
+        v1 = pos + (v1 * scale);
+        glVertex2f(v1.x, v1.y);
 	}
-	xyz_t v1{ shape[0].x, -shape[0].y };
-	xyz_t v2{ shape[shape.size() - 1].x, -shape[shape.size() - 1].y };
-	DrawLine(pos + (v1 * scale), pos + (v2 * scale), c);
+    glEnd();
 }
 
 // 2D (mercator) geographic drawing
@@ -71,52 +63,56 @@ xyz_t geoToMercatorCentered(xyz_t geo, float scale, float offx, float offy) {
     return t;
 }
 
-void DrawGeoLine(xyz_t geo1, xyz_t geo2, float scale, float offx, float offy, xyz_t c) {
-	xyz_t t1 = geoToMercatorCentered(geo1, scale, offx, offy);
-	xyz_t t2 = geoToMercatorCentered(geo2, scale, offx, offy);
-	DrawLine(t1, t2, c);
-}
-
 void DrawGeoLines(std::vector<xyz_t>& lines, float scale, float offx, float offy, xyz_t c) {
     if (lines.size() == 0) return;
+    glBegin(GL_LINES);
+    glColor3f(c.x, c.y, c.z);
     for (int i = 0; i < lines.size() - 1; i++) {
         if (abs(lines[i + 1].lon - lines[i].lon) > 50.0f) continue;
-	    DrawGeoLine(lines[i], lines[i + 1], scale, offx, offy, c);
+        xyz_t v1 = geoToMercatorCentered(lines[i], scale, offx, offy);
+        xyz_t v2 = geoToMercatorCentered(lines[i + 1], scale, offx, offy);
+        glVertex2f(v1.x, v1.y);
+        glVertex2f(v2.x, v2.y);
     }
+    glEnd();
 }
 
 void DrawGeoShape(const std::vector<xyz_t>& shape, float scale, float offx, float offy, xyz_t c) {
     if (shape.size() == 0) return;
+    glBegin(GL_LINES);
+    glColor3f(c.x, c.y, c.z);
     for (int i = 0; i < shape.size() - 1; i++) {
         if (abs(shape[i + 1].lon - shape[i].lon) > 50.0f) continue;
-	    DrawGeoLine(shape[i], shape[i + 1], scale, offx, offy, c);
+        xyz_t v1 = geoToMercatorCentered(shape[i], scale, offx, offy);
+        xyz_t v2 = geoToMercatorCentered(shape[i + 1], scale, offx, offy);
+        glVertex2f(v1.x, v1.y);
+        glVertex2f(v2.x, v2.y);
     }
-    DrawGeoLine(shape[0], shape[shape.size() - 1], scale, offx, offy, c);
+    glEnd();
 }
 
 // 3D geographic drawing
 
-void DrawGeoLine3(xyz_t geo1, xyz_t geo2, float scale, xyz_t c) {
-	xyz_t t1 = geoToECEF(geo1) * scale;
-	xyz_t t2 = geoToECEF(geo2) * scale;
-	DrawLine(t1, t2, c);
-}
-
 void DrawGeoLines3(const std::vector<xyz_t>& lines, float scale, xyz_t c) {
     if (lines.size() == 0) return;
-    for (int i = 0; i < lines.size() - 1; i++) {
-        if (abs(lines[i + 1].lon - lines[i].lon) > 50.0f) continue;
-	    DrawGeoLine3(lines[i], lines[i + 1], scale, c);
+    glBegin(GL_LINE_STRIP);
+    glColor3f(c.x, c.y, c.z);
+    for (int i = 0; i < lines.size(); i++) {
+        xyz_t v = geoToECEF(lines[i]) * scale;
+        glVertex3f(v.x, v.y, v.z);
     }
+    glEnd();
 }
 
 void DrawGeoShape3(const std::vector<xyz_t>& shape, float scale, xyz_t c) {
     if (shape.size() == 0) return;
+    glBegin(GL_LINE_LOOP);
+    glColor3f(c.x, c.y, c.z);
     for (int i = 0; i < shape.size() - 1; i++) {
-        if (abs(shape[i + 1].lon - shape[i].lon) > 50.0f) continue;
-	    DrawGeoLine3(shape[i], shape[i + 1], scale, c);
+        xyz_t v = geoToECEF(shape[i]) * scale;
+        glVertex3f(v.x, v.y, v.z);
     }
-    DrawGeoLine3(shape[0], shape[shape.size() - 1], scale, c);
+    glEnd();
 }
 
 void DrawBillboardShape3(std::vector<xyz_t>& shape, xyz_t pos, float scale, xyz_t c) {
@@ -134,33 +130,30 @@ void DrawBillboardShape3(std::vector<xyz_t>& shape, xyz_t pos, float scale, xyz_
     pos = { pos_vec.x, pos_vec.y, pos_vec.z};
 
     if (shape.size() == 0) return;
-	for (int i = 0; i < shape.size() - 1; i++) {
-		DrawLine(pos + (shape[i] * scale), pos + (shape[i + 1] * scale), c);
-	}
 
-    DrawLine(pos + (shape[0] * scale), pos + (shape[shape.size() - 1] * scale), c);
+    glBegin(GL_LINE_LOOP);
+    glColor3f(c.x, c.y, c.z);
+	for (int i = 0; i < shape.size(); i++) {
+        xyz_t v = pos + (shape[i] * scale);
+        glVertex3f(v.x, v.y, v.z);
+	}
+    glEnd();
+
     
     // return to GL matrix
     glLoadMatrixf((float*)&view);
 }
 
 void DrawTexturedSphere(TexturedSphere sphere, float radius, float roty) {
-    //glPolygonMode(GL_FRONT, GL_FILL);
-    
-    //glBindTexture(GL_TEXTURE_2D, sphere.texture);
-
     glPushMatrix();
     glRotatef(180.0f, 0.0f, 0.0f, 1.0f);
     glEnable(GL_TEXTURE_2D);
     glBegin(GL_TRIANGLES);
     for (int i = 0; i < sphere.npoints; i++) {
-        //glColor3f(sphere.points[i].u, sphere.points[i].v, 0.0f);
         glTexCoord2f(sphere.points[i].u, sphere.points[i].v);
         glVertex3f(sphere.points[i].x * radius, sphere.points[i].y * radius, sphere.points[i].z * radius);
     }
     glEnd();
     glDisable(GL_TEXTURE_2D);
     glPopMatrix();
-
-    //glPolygonMode(GL_FRONT, GL_LINE);
 }
