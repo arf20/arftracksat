@@ -9,29 +9,12 @@ file (GLOB SGPD4_SRC
     "common/sgdp4/sigutils/*.c"
     "common/sgdp4/*.c"
 )
-
-file (GLOB CORE_SRC
-    "core/*.cpp"
-)
-
-file (GLOB REPRESENTATION_SRC
-    "representation/*.cpp"
-)
-
-file (GLOB LEGACY_UI_SRC
-    "representation/legacy_gl_ui/*.cpp"
-)
-
-file (GLOB MAIN_SRC
-    "src/*.cpp"
-)
-
-set(CONFJSON "config.json")
-set(ASSETS 
-    "assets/map.json"
-    "assets/earth.obj"
-    "assets/earth.mtl"
-)
+file (GLOB CORE_SRC "core/*.cpp")
+file (GLOB REPRESENTATION_SRC "representation/*.cpp")
+file (GLOB LEGACY_UI_SRC "representation/legacy_gl_ui/*.cpp")
+file (GLOB MAIN_SRC "src/*.cpp")
+file (GLOB CONFJSON "config.json")
+file (GLOB ASSETS "assets/*")
 
 set(SOURCE_FILES ${SGPD4_SRC} ${COMMON_SRC} ${COMMON_SRC} ${CORE_SRC} ${LEGACY_UI_SRC} ${REPRESENTATION_SRC} ${MAIN_SRC})
 set(CMAKE_DEFAULT_PROJECT_FILE main.cpp)

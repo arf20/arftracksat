@@ -33,7 +33,7 @@ static station g_sta;
 
 // assets
 static std::vector<shape> continents;
-static obj earth;
+static TexturedSphere earth;
 
 // variable stuff
 static float timeBase = 0.0f;
@@ -145,15 +145,24 @@ void keyboard(unsigned char key, int x, int y) {
 
 
 void render2d() {
-    // Draw parallels and meridians                                                     
+    // Draw parallels and meridians
+    glBegin(GL_LINES);
+    glColor3f(GLC_BLUE);
     for (float a = -180; a <= 180; a += 20) {
-        DrawGeoLine({a, -80.0f}, {a, 80.0f}, scale_2d, offx, offy, C_BLUE);
+        xyz_t v1 = geoToMercatorCentered({a, -80.0f}, scale_2d, offx, offy);
+        xyz_t v2 = geoToMercatorCentered({a, 80.0f}, scale_2d, offx, offy);
+        glVertex2f(v1.x, v1.y);
+        glVertex2f(v2.x, v2.y);
         DrawString(geoToMercatorCentered({ a, -80.0f }, scale_2d, offx, offy) + xyz_t{0.0f, TEXT_HEIGHT}, std::to_string((int)a), C_BLUE);
     }
     for (float a = -80; a <= 80; a += 20) {
-        DrawGeoLine({-180.0f, a}, {180.0f, a}, scale_2d, offx, offy, C_BLUE);
+        xyz_t v1 = geoToMercatorCentered({-180.0f, a}, scale_2d, offx, offy);
+        xyz_t v2 = geoToMercatorCentered({180.0f, a}, scale_2d, offx, offy);
+        glVertex2f(v1.x, v1.y);
+        glVertex2f(v2.x, v2.y);
         DrawString(geoToMercatorCentered({ 180.0f, a }, scale_2d, offx, offy) + xyz_t{10.0f, 0.0f}, std::to_string((int)a), C_BLUE);
     }
+    glEnd();
 
     // Draw map                                                           
     for (shape &continent : continents) {
@@ -185,15 +194,21 @@ void render2d() {
         float circlec = EARTHR * cos(TORAD * sat.aosRadiusAngle);
         xyz_t P = u_vert * circlec;
 
-        float finestep = 5.0f;
+        float finestep = 2.5f;
+        glBegin(GL_LINES);
+        glColor3f(c.x, c.y, c.z);
         for (float i = 0.0f; i <= 360.0f; i += finestep) {
             xyz_t p1 = ECEFToGeo(P + (u_lon * (circler) * cos(TORAD * i)) + (u_lat * (circler) * sin(TORAD * i)));
             xyz_t p2 = ECEFToGeo(P + (u_lon * (circler) * cos(TORAD * (i + finestep))) + (u_lat * (circler) * sin(TORAD * (i + finestep))));
             if (abs(p1.lat) > 85.0f || abs(p2.lat) > 85.0f) continue;
             if (abs(p2.lon - p1.lon) > 50.0f) continue;
             p1.height = 0.0f; p2.height = 0.0f;
-            DrawGeoLine(p1, p2, scale_2d, offx, offy, c);
+            p1 = geoToMercatorCentered(p1, scale_2d, offx, offy);
+            p2 = geoToMercatorCentered(p2, scale_2d, offx, offy);
+            glVertex2f(p1.x, p1.y);
+            glVertex2f(p2.x, p2.y);
         }
+        glEnd();
 
         // Draw icon
         DrawShape(satshape, satpos, 2.5, c);
@@ -206,7 +221,7 @@ void render3d() {
     glRotatef(rotatex - 90.0f, 1.0f, 0.0f, 0.0f);
     glRotatef(-rotatez - 90.0f, 0.0f, 0.0f, 1.0f);
 
-    DrawObj(earth, scale_model * scale_3d, 90.0f);
+    DrawTexturedSphere(earth, EARTHR * scale_3d, 90.0f);
 
     DrawBillboardShape3(stashape, geoToECEF(g_sta.geo) * scale_3d, 0.05f, C_GREEN);
 
@@ -232,11 +247,14 @@ void render3d() {
         xyz_t P = u_vert * circlec;
 
         float finestep = 5.0f;
+        glBegin(GL_LINE_LOOP);
+        glColor3f(c.x, c.y, c.z);
         for (float i = 0.0f; i <= 360.0f; i += finestep) {
             xyz_t v1 = (u_lon * (circler) * cos(TORAD * i)) + (u_lat * (circler) * sin(TORAD * i));
-            xyz_t v2 = (u_lon * (circler) * cos(TORAD * (i + finestep))) + (u_lat * (circler) * sin(TORAD * (i + finestep)));
-            DrawLine((P + v1) * scale_3d, (P + v2) * scale_3d, c);
+            v1 = (P + v1) * scale_3d;
+            glVertex3f(v1.x, v1.y, v1.z);
         }
+        glEnd();
 
         // Draw icon
         DrawBillboardShape3(satshape, satpos, 0.05, c);
@@ -310,15 +328,10 @@ void reshape(GLsizei l_width, GLsizei l_height) {
     glViewport(0, 0, width, height);
 }
 
-void startGraphics(std::vector<std::vector<sat>::iterator>& shownSats, station& sta, std::string mapfile, std::string objfile) {
+void startGraphics(std::vector<std::vector<sat>::iterator>& shownSats, station& sta, std::string mapfile, std::string texturefile) {
     // Copy stuff to global scope
     g_shownSats = shownSats;
     g_sta = sta;
-
-    // Load map
-    continents = loadMap(mapfile);
-    // Load 3D earth
-    earth = loadEarth(objfile);
 
     // Init glut
     int argc = 0;
@@ -349,6 +362,11 @@ void startGraphics(std::vector<std::vector<sat>::iterator>& shownSats, station& 
     rotatez = g_sta.geo.lon;
 
     std::thread computeThread(computeLoop, std::ref(shownSats), std::ref(sta));
+
+    // Load map
+    continents = loadMap(mapfile);
+    // Load 3D earth
+    earth = loadEarthTextureSphere(texturefile);
 
     glutMainLoop();                     // Enter the infinite event-processing loop
 }
