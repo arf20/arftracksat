@@ -6,9 +6,6 @@
 
 #include <string>
 
-#include <GL/freeglut.h>
-#include <GL/gl.h>
-
 #define TEXT_HEIGHT     15
 
 std::string toString(float n);

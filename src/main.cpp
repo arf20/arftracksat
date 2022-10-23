@@ -1,6 +1,6 @@
 #include "../common/sgdp4/sgdp4.h"
 #include "../core/sat.hpp"
-#include "../representation/graphics.hpp"
+#include "../representation/representation.hpp"
 
 #include <ctime>
 #include <thread>

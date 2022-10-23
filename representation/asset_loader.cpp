@@ -5,10 +5,10 @@
 #include <nlohmann/json.hpp>
 using namespace nlohmann;
 
+#include <glad/glad.h>
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
-
-#include <GL/freeglut.h>
 
 #include <vector>
 #include <iostream>

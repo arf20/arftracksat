@@ -2,9 +2,6 @@
 
 #include "../common/types-defs.hpp"
 
-#include <GL/freeglut.h>
-#include <GL/gl.h>
-
 #include <vector>
 
 struct Point {
