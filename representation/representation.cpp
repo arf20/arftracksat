@@ -147,7 +147,6 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 }
 
 void render2d(float deltaTime) {
-    drawText("asdf", 20, 20, {1.0f, 1.0f, 1.0f});
     legacy_gl_ui(width, height, deltaTime, compstats.computeTime, mode, compstats.timeNow, g_sta, g_shownSats, selsatidx);
 }
 
@@ -199,7 +198,7 @@ void startGraphics(std::vector<std::vector<sat>::iterator>& shownSats, station& 
 
     // Create window
     GLFWwindow *window = NULL;
-    if (!(window = glfwCreateWindow(width, height, "moderngltest", NULL, NULL))) {
+    if (!(window = glfwCreateWindow(width, height, "arftracksat", NULL, NULL))) {
         std::cout << "Error creating window" << std::endl;
         glfwTerminate();
         exit(1);
@@ -223,6 +222,7 @@ void startGraphics(std::vector<std::vector<sat>::iterator>& shownSats, station& 
     glEnable(GL_CULL_FACE);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_TEXTURE_2D);
 
     // set rotation to station lad/lon
     rotatex = g_sta.geo.lat;
@@ -232,7 +232,7 @@ void startGraphics(std::vector<std::vector<sat>::iterator>& shownSats, station& 
     // Load map geojson
     continents = loadMap(mapfile);
     // Load earth texture
-    earth = loadEarthTextureSphere(texturefile);
+    //earth = loadEarthTextureSphere(texturefile);
 
     // initialize text renderer
     textRendererInit("../representation/shaders/text.vs", "../representation/shaders/text.fs", "../assets/charstrip.bmp", 9, 15, &width, &height);
