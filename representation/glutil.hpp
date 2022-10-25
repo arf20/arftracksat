@@ -7,7 +7,6 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
-#include <span>
 #include <vector>
 
 // =============== Shader ===============
