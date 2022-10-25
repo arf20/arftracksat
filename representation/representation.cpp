@@ -6,6 +6,7 @@
 #include "shapes.hpp"
 #include "colors.hpp"
 #include "graphic_util.hpp"
+#include "textrenderer.hpp"
 
 #include "asset_loader.hpp"
 #include "legacy_gl_ui/legacy_gl_ui.hpp"
@@ -26,8 +27,8 @@
 int selsatidx = 0;     // index of shownSats
 
 // File Globals
-static GLfloat width = 1;
-static GLfloat height = 1;
+static int width = 800;
+static int height = 600;
 
 static std::vector<std::vector<sat>::iterator> g_shownSats;
 static station g_sta;
@@ -146,6 +147,7 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 }
 
 void render2d(float deltaTime) {
+    drawText("asdf", 20, 20, {1.0f, 1.0f, 1.0f});
     legacy_gl_ui(width, height, deltaTime, compstats.computeTime, mode, compstats.timeNow, g_sta, g_shownSats, selsatidx);
 }
 
@@ -163,10 +165,10 @@ void render(GLFWwindow *window) {
     timeBase = glTimeNow;
 
     if (mode) { // 3D
-        render2d(deltaTime);
+        
     }
     else {  // 2D
-  
+        render2d(deltaTime);
     }
 
 }
@@ -231,6 +233,9 @@ void startGraphics(std::vector<std::vector<sat>::iterator>& shownSats, station& 
     continents = loadMap(mapfile);
     // Load earth texture
     earth = loadEarthTextureSphere(texturefile);
+
+    // initialize text renderer
+    textRendererInit("../representation/shaders/text.vs", "../representation/shaders/text.fs", "../assets/charstrip.bmp", 9, 15, &width, &height);
 
     // Enter the infinite event-processing loop
     while (!glfwWindowShouldClose(window)) {

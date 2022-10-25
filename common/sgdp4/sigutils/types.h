@@ -23,7 +23,7 @@
 #endif /* __GNUC__ */
 
 #include <complex.h>
-#include <fftw3.h>
+//#include <fftw3.h>
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
