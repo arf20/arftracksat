@@ -4,6 +4,8 @@
 
 #include <vector>
 
+#include <glad/glad.h>
+
 struct Point {
     float x;
     float y;

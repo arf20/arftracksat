@@ -3,16 +3,17 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include "../common/types-defs.hpp"
-#include "../common/sgdp4/sgdp4.h"
 #include "shapes.hpp"
 #include "colors.hpp"
 #include "graphic_util.hpp"
 
-#include "../core/sat.hpp"
-
 #include "asset_loader.hpp"
 #include "legacy_gl_ui/legacy_gl_ui.hpp"
+
+#include "../common/types-defs.hpp"
+#include "../common/sgdp4/sgdp4.h"
+
+#include "../core/sat.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -144,8 +145,8 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
     }
 }
 
-void render2d() {
-
+void render2d(float deltaTime) {
+    legacy_gl_ui(width, height, deltaTime, compstats.computeTime, mode, compstats.timeNow, g_sta, g_shownSats, selsatidx);
 }
 
 void render3d() {
@@ -162,7 +163,7 @@ void render(GLFWwindow *window) {
     timeBase = glTimeNow;
 
     if (mode) { // 3D
-
+        render2d(deltaTime);
     }
     else {  // 2D
   

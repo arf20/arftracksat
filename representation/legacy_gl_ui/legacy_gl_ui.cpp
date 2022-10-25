@@ -4,8 +4,8 @@
 
 #include "../graphic_util.hpp"
 
-#include <GL/freeglut.h>
-#include <GL/gl.h>
+#include <glad/glad.h>
+#include "../textrenderer.hpp"
 
 #include <string>
 

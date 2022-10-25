@@ -3,14 +3,15 @@ project(arftracksat VERSION 0.1.0)
 
 set(CMAKE_CXX_STANDARD 17)
 
-include_directories(common/sgdp4/ representation/glad/include/)
+include_directories(common/sgdp4/ common/sgdp4/sigutils/ common/sgdp4/sigutils/util/ representation/glad/include/)
 
 file (GLOB SGPD4_SRC
+    "common/sgdp4/sigutils/util/*.c"
     "common/sgdp4/sigutils/*.c"
     "common/sgdp4/*.c"
 )
 file (GLOB CORE_SRC "core/*.cpp")
-file (GLOB REPRESENTATION_SRC "representation/*.cpp")
+file (GLOB REPRESENTATION_SRC "representation/glad/*.c" "representation/*.cpp")
 file (GLOB LEGACY_UI_SRC "representation/legacy_gl_ui/*.cpp")
 file (GLOB MAIN_SRC "src/*.cpp")
 file (GLOB CONFJSON "config.json")
