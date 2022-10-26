@@ -17,7 +17,7 @@ std::string toString(float n) {
 }
 
 void DrawString(xyz_t pos, std::string str, xyz_t c) {
-    drawText(str.c_str(), pos.x, pos.y, {c.x, c.y, c.z});
+    addText(str.c_str(), pos.x, pos.y, {c.x, c.y, c.z});
 }
 
 // 2D (mercator) geographic drawing

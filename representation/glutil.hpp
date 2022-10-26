@@ -43,6 +43,12 @@ struct xyzuv_t {
     glm::vec2 uv;
 };
 
+struct xyzrgbuv_t {
+    glm::vec3 pos;
+    glm::vec3 rgb;
+    glm::vec2 uv;
+};
+
 class VAO {
 public:
     VAO(std::vector<size_t> lattrSizes);

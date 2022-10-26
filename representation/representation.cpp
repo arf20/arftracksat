@@ -67,7 +67,7 @@ void computeLoop(std::vector<std::vector<sat>::iterator>& shownSats, station& st
 // ================== callbacks ==================
 
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    if (action != GLFW_PRESS) return;
+    if (action != GLFW_PRESS && action != GLFW_REPEAT) return;
 
     if (key >= '1' && key <= '8') {
         // Select satellite 1-9
@@ -148,6 +148,7 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 
 void render2d(float deltaTime) {
     legacy_gl_ui(width, height, deltaTime, compstats.computeTime, mode, compstats.timeNow, g_sta, g_shownSats, selsatidx);
+    renderText();
 }
 
 void render3d() {
@@ -160,7 +161,7 @@ void render(GLFWwindow *window) {
 
     // Draw info
     float glTimeNow = glfwGetTime();
-    float deltaTime = (glTimeNow - timeBase) / 1000.0f;
+    float deltaTime = glTimeNow - timeBase;
     timeBase = glTimeNow;
 
     if (mode) { // 3D
@@ -223,6 +224,7 @@ void startGraphics(std::vector<std::vector<sat>::iterator>& shownSats, station& 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_TEXTURE_2D);
+    glEnable(GL_MULTISAMPLE);
 
     // set rotation to station lad/lon
     rotatex = g_sta.geo.lat;

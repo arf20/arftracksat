@@ -142,8 +142,11 @@ void VAO::set(const float *vert, size_t vertSize, const GLuint *elem, size_t ele
     glBindVertexArray(id);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, vertSize, vert, GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, elemSize, elem, GL_STATIC_DRAW);
+    
+    if (!elem) {
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, elemSize, elem, GL_STATIC_DRAW);
+    }
 
     // tell gl how to use them
     size_t nAttr = attrSizes.size();
