@@ -22,8 +22,8 @@ void DrawString(xyz_t pos, std::string str, xyz_t c) {
 
 // 2D (mercator) geographic drawing
 
-xyz_t geoToMercator(xyz_t geo, float scale, float offx, float offy) {
-	xyz_t t;
+glm::vec3 geoToMercator(xyz_t geo, float scale, float offx, float offy) {
+	glm::vec3 t;
 	t.x = (scale / (2.0f * PI)) * 2.0f * ((TORAD * geo.lon) + PI);
 	t.y = (scale / (2.0f * PI)) * 2.0f * (PI - log(tan((PI / 4.0f) + ((TORAD * geo.lat) / 2.0f))));
     t.x += offx;
@@ -32,17 +32,17 @@ xyz_t geoToMercator(xyz_t geo, float scale, float offx, float offy) {
 }
 
 float mercatorWidth(float scale) {
-    xyz_t t = geoToMercator({179.99f, -89.99f, 0.0f}, scale, 0.0f, 0.0f);
+    glm::vec3 t = geoToMercator({179.99f, -89.99f, 0.0f}, scale, 0.0f, 0.0f);
     return t.x;
 }
 
 float mercatorHeight(float scale) {
-    xyz_t t = geoToMercator({179.99f, -89.99f, 0.0f}, scale, 0.0f, 0.0f);
+    glm::vec3 t = geoToMercator({179.99f, -89.99f, 0.0f}, scale, 0.0f, 0.0f);
     return t.y / 2.0f;      // tbh idk
 }
 
-xyz_t geoToMercatorCentered(xyz_t geo, float scale, float offx, float offy) {
-    xyz_t t = geoToMercator(geo, scale, offx, offy);
+glm::vec3 geoToMercatorCentered(xyz_t geo, float scale, float offx, float offy) {
+    glm::vec3 t = geoToMercator(geo, scale, offx, offy);
     t.x -= mercatorWidth(scale) / 2.0f;
     t.y -= mercatorHeight(scale) / 2.0f;
     return t;

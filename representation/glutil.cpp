@@ -157,6 +157,7 @@ void VAO::set(const float *vert, size_t vertSize, const GLuint *elem, size_t ele
         glEnableVertexAttribArray(i);
         offset += attrSizes[i];
     }
+    vCount = vertSize / (sizeof(float) * stride);
 }
 
 // bind/activate the shader

@@ -3,6 +3,9 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 #include "shapes.hpp"
 #include "colors.hpp"
 #include "graphic_util.hpp"
@@ -34,20 +37,30 @@ static std::vector<std::vector<sat>::iterator> g_shownSats;
 static station g_sta;
 
 // assets
-static std::vector<shape> continents;
-static TexturedSphere earth;
+static std::vector<shape> geoMap;
+static Texture *earthTex;
+
+// baked stuff
+static VAO *mercatorMap;
+static VAO *earthSphere;
+
+// shaders
+static Shader *lineShader;
 
 // variable stuff
 static float timeBase = 0.0f;
 
-static bool mode = false;                       // false = 2D, true = 3D
+static bool mode = false;                       // false = 2D, true = 3Dproj = glm::ortho<float>(0.0f, (float)w, (float)h, 0.0f);
 
 #define SATLIST_SIZE    10
 static int selsatoff = 0;
 
 static float scale_2d = 360.0f;                 // perfect for 480 height
+static glm::mat4 scale_2d_mat = glm::scale(glm::mat4(1.0f), {scale_2d, scale_2d, 0.0f});
 static float offx = mercatorWidth(scale_2d) / 2.0f;
 static float offy = mercatorHeight(scale_2d) / 2.0f;
+
+static glm::mat4 screenToNDC;
 
 static float scale_3d = 5.0f / EARTHR;          // make it 5 times smaller
 static float scale_model = EARTHR / 100.0f;     // model radius is like 100
@@ -62,6 +75,14 @@ void computeLoop(std::vector<std::vector<sat>::iterator>& shownSats, station& st
     while (true) {
 		compstats = computeSats(shownSats, sta, selsatidx);
 	}
+}
+
+// coordinates
+glm::mat4 makeScreenToNDC(int w, int h) {
+    glm::mat4 t = glm::mat4(1.0f);
+    t = glm::scale(t, {2.0f / (float)width, -2.0f / (float)height, 0.0f});
+    //t = glm::translate(t, {-1.0f, 1.0f, 0.0f});
+    return t;
 }
 
 // ================== callbacks ==================
@@ -79,7 +100,7 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
     switch (key) {
         case 'c':   // Exit
         case 'C':
-            exit(0);
+            glfwSetWindowShouldClose(window, true);
         break;
         case 'z':   // Switch to 2D
         case 'Z':
@@ -144,9 +165,19 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
                 scale_2d *= 0.9f;
         break;
     }
+
+    // update matrices
+    scale_2d_mat = glm::scale(glm::mat4(1.0f), {scale_2d, scale_2d, 0.0f});
 }
 
 void render2d(float deltaTime) {
+    // draw mercator map
+    mercatorMap->bind();
+    lineShader->use();
+    lineShader->setMat4("proj", scale_2d_mat * screenToNDC);
+    glDrawArrays(GL_LINES, 0, mercatorMap->vCount);
+
+    // draw text UI
     legacy_gl_ui(width, height, deltaTime, compstats.computeTime, mode, compstats.timeNow, g_sta, g_shownSats, selsatidx);
     renderText();
 }
@@ -179,7 +210,10 @@ void resizeCallback(GLFWwindow *window, int w, int h) {
     width = w; height = h;
 
     // Set the viewport to cover the new window
-    glViewport(0, 0, width, height);
+    glViewport(0, 0, w, h);
+
+    //proj = glm::ortho<float>(0.0f, (float)w, (float)h, 0.0f);
+    screenToNDC = makeScreenToNDC(w, h);
 }
 
 void startGraphics(std::vector<std::vector<sat>::iterator>& shownSats, station& sta, std::string mapfile, std::string texturefile) {
@@ -226,15 +260,45 @@ void startGraphics(std::vector<std::vector<sat>::iterator>& shownSats, station& 
     glEnable(GL_TEXTURE_2D);
     glEnable(GL_MULTISAMPLE);
 
-    // set rotation to station lad/lon
+    // set rotation to station lad/lon in 3D
     rotatex = g_sta.geo.lat;
     rotatez = g_sta.geo.lon;
 
+    // set screen projection in 2D
+    screenToNDC = makeScreenToNDC(width, height);
+
+    scale_2d_mat = glm::scale(glm::mat4(1.0f), {scale_2d, scale_2d, 0.0f});
+
     // load assets
-    // Load map geojson
-    continents = loadMap(mapfile);
-    // Load earth texture
-    //earth = loadEarthTextureSphere(texturefile);
+    // load map geojson
+    geoMap = loadMap(mapfile);
+    // load earth texture
+    earthTex = new Texture("../assets/earth.png");
+
+    // bake mercator map
+    size_t nPoints = 0;
+    for (auto t : geoMap)
+        nPoints += t.points.size();
+    xyzrgb_t *geoVertices = new xyzrgb_t[2 * (nPoints - 1)];
+
+    // compile shaders
+    lineShader = new Shader("../representation/shaders/line.vs", "../representation/shaders/line.fs");
+
+    size_t verIdx = 0;
+    for (auto shape : geoMap)
+        for (int i = 0; i < shape.points.size() - 1; i++) {
+            if (abs(shape.points[i + 1].lon - shape.points[i].lon) > 50.0f) continue;
+            geoVertices[verIdx].pos =     geoToMercatorCentered(shape.points[i], 1.0f, 0.0f, 0.0f);
+            geoVertices[verIdx].pos.z =   0.0f;
+            geoVertices[verIdx].rgb =     C_WHITE;
+            geoVertices[verIdx + 1].pos = geoToMercatorCentered(shape.points[i + 1], 1.0f, 0.0f, 0.0f);
+            geoVertices[verIdx + 1].pos.z = 0.0f;
+            geoVertices[verIdx + 1].rgb = C_WHITE;
+            verIdx += 2;
+        }
+
+    mercatorMap = new VAO(VA_XYZRGB);
+    mercatorMap->set((float*)geoVertices, sizeof(xyzrgb_t) * 2 * (nPoints - 1));
 
     // initialize text renderer
     textRendererInit("../representation/shaders/text.vs", "../representation/shaders/text.fs", "../assets/charstrip.bmp", 9, 15, &width, &height);

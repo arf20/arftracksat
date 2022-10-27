@@ -38,6 +38,11 @@ public:
 #define VA_XYZUV    { 3, 2 }
 #define VA_XYZRGBUV { 3, 3, 2 }
 
+struct xyzrgb_t {
+    glm::vec3 pos;
+    glm::vec3 rgb;
+};
+
 struct xyzuv_t {
     glm::vec3 pos;
     glm::vec2 uv;
@@ -56,6 +61,8 @@ public:
     void bind();
     std::vector<size_t> attrSizes;
     GLuint id;
+    GLuint vCount;
+private:
     GLuint VBO;
     GLuint EBO;
 };
