@@ -7,7 +7,7 @@ SGDP-4 adaptation shamelessly copied from BatchDrake's suscan.
 Install dependencies
 ```
 sudo apt update
-sudo apt install nlohmann-json3-dev libcurl4-openssl-dev libcurlpp-dev libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev
+sudo apt install nlohmann-json3-dev libcurl4-openssl-dev libcurlpp-dev libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev libglm-dev
 ```
 Build
 ```
@@ -17,9 +17,16 @@ mkdir build
 cd build
 cmake ..
 make
-sudo make install
+sudo make install # omit this if only building for development
 ```
 You may add -j<CPUs> to the make command to build faster.
+
+## Running
+Without installing, for development
+```
+./arftracksat
+```
+After installing, just run `arftracksat` anywhere.
 
 ## Configuring
 The default config.json located at /usr/local/etc/arftracksat/ after install should work out of the box
@@ -62,6 +69,11 @@ If no sats are found in the TLE, celestrack (or similar) probably returned no TL
 
 ## Assets
 The cylindrical earth texture is world.topo.bathy.200412.3x5400x2700 from NASA's https://visibleearth.nasa.gov/images/73909/december-blue-marble-next-generation-w-topography-and-bathymetry
+
+# Further development
+Working on converting this to modern GL (GLFW/OpenGL 3.3) (branch feature/moderngl),
+and making a nice Qt GUI for it (branch qt),
+and maybe even at some point I could make a SigDigger and/or SDR++ plugin (branch plugin)
 
 # Where Windows?
 I just broke support lol
