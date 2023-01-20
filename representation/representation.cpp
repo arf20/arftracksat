@@ -260,6 +260,10 @@ void startGraphics(std::vector<std::vector<sat>::iterator>& shownSats, station& 
     glEnable(GL_TEXTURE_2D);
     glEnable(GL_MULTISAMPLE);
 
+    // compile shaders
+    lineShader = new Shader("../representation/shaders/line.vs", "../representation/shaders/line.fs");
+
+
     // set rotation to station lad/lon in 3D
     rotatex = g_sta.geo.lat;
     rotatez = g_sta.geo.lon;
@@ -277,12 +281,9 @@ void startGraphics(std::vector<std::vector<sat>::iterator>& shownSats, station& 
 
     // bake mercator map
     size_t nPoints = 0;
-    for (auto t : geoMap)
-        nPoints += t.points.size();
-    xyzrgb_t *geoVertices = new xyzrgb_t[2 * (nPoints - 1)];
-
-    // compile shaders
-    lineShader = new Shader("../representation/shaders/line.vs", "../representation/shaders/line.fs");
+    for (auto shape : geoMap)
+        nPoints += shape.points.size();
+    xyzrgb_t *geoVertices = new xyzrgb_t[2 * (nPoints)];
 
     size_t verIdx = 0;
     for (auto shape : geoMap)
@@ -298,7 +299,7 @@ void startGraphics(std::vector<std::vector<sat>::iterator>& shownSats, station& 
         }
 
     mercatorMap = new VAO(VA_XYZRGB);
-    mercatorMap->set((float*)geoVertices, sizeof(xyzrgb_t) * 2 * (nPoints - 1));
+    mercatorMap->set((float*)geoVertices, sizeof(xyzrgb_t) * (verIdx + 1));
 
     // initialize text renderer
     textRendererInit("../representation/shaders/text.vs", "../representation/shaders/text.fs", "../assets/charstrip.bmp", 9, 15, &width, &height);
