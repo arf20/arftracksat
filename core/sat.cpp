@@ -1,8 +1,11 @@
 #include "sat.hpp"
 
-//#include "graphics.hpp"
 #include "../common/util.hpp"
-#include "../common/sgdp4/sgdp4.h"
+
+extern "C" {
+	#include "../common/sgdp4/sgdp4.h"
+	#include "../common/sgdp4/sigutils/sigutils.h"
+}
 
 #include <ctime>
 #include <string>
@@ -31,6 +34,9 @@ void loadSats(std::string tlefile) {
 
 	char *buff = (char*)malloc(size);
 	file.read(buff, size);
+
+	// initialise sigutils
+	su_lib_init();
 
 	orbit_t orbit;
 	sat sat;
