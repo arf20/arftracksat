@@ -5,6 +5,7 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 #include "shapes.hpp"
 #include "colors.hpp"
@@ -56,9 +57,9 @@ static bool mode = false;                       // false = 2D, true = 3Dproj = g
 static int selsatoff = 0;
 
 static float scale_2d = 360.0f;                 // perfect for 480 height
-static glm::mat4 scale_2d_mat = glm::scale(glm::mat4(1.0f), {scale_2d, scale_2d, 0.0f});
-static float offx = mercatorWidth(scale_2d) / 2.0f;
-static float offy = mercatorHeight(scale_2d) / 2.0f;
+static glm::mat4 mat_2d = glm::scale(glm::mat4(1.0f), {scale_2d, scale_2d, 0.0f});
+static float offx = 0.0f; 
+static float offy = 0.0f;
 
 static glm::mat4 screenToNDC;
 
@@ -68,6 +69,7 @@ static float rotatex;
 static float rotatez;
 
 #define ROT_DEG 5.0f                            // rotate step
+constexpr float offstep = 0.1f;
 
 compute_stats compstats;
 
@@ -127,28 +129,28 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
             if (mode)
                 rotatez -= ROT_DEG;
             else
-                offx += 30.0f;
+                offx += offstep;
         break;
         case 'd':
         case 'D':
             if (mode)
                 rotatez += ROT_DEG;
             else
-                offx -= 30.0f;
+                offx -= offstep;
         break;
         case 'w':
         case 'W':
             if (mode)
                 rotatex += ROT_DEG;
             else
-                offy += 30.0f;
+                offy -= offstep;
         break;
         case 's':
         case 'S':
             if (mode)
                 rotatex -= ROT_DEG;
             else
-                offy -= 30.0f;
+                offy += offstep;
         break;
         case 'q':   // scale
         case 'Q':
@@ -167,14 +169,17 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
     }
 
     // update matrices
-    scale_2d_mat = glm::scale(glm::mat4(1.0f), {scale_2d, scale_2d, 0.0f});
+    mat_2d = glm::translate(glm::mat4(1.0f), {offx, offy, 0.0f});
+    mat_2d = glm::scale(mat_2d, {scale_2d, scale_2d, 0.0f});
+
+    //std::cout << glm::to_string(mat_2d) << std::endl;
 }
 
 void render2d(float deltaTime) {
     // draw mercator map
     mercatorMap->bind();
     lineShader->use();
-    lineShader->setMat4("proj", scale_2d_mat * screenToNDC);
+    lineShader->setMat4("proj", mat_2d * screenToNDC);
     glDrawArrays(GL_LINES, 0, mercatorMap->vCount);
 
     // draw text UI
@@ -271,7 +276,8 @@ void startGraphics(std::vector<std::vector<sat>::iterator>& shownSats, station& 
     // set screen projection in 2D
     screenToNDC = makeScreenToNDC(width, height);
 
-    scale_2d_mat = glm::scale(glm::mat4(1.0f), {scale_2d, scale_2d, 0.0f});
+    mat_2d = glm::scale(glm::mat4(1.0f), {scale_2d, scale_2d, 0.0f});
+    //std::cout << glm::to_string(mat_2d) << std::endl;
 
     // load assets
     // load map geojson
