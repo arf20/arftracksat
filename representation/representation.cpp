@@ -43,6 +43,7 @@ static Texture *earthTex;
 
 // baked stuff
 static VAO *mercatorMap;
+static VAO *latlonLines;
 static VAO *earthSphere;
 
 // shaders
@@ -176,11 +177,20 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 }
 
 void render2d(float deltaTime) {
-    // draw mercator map
-    mercatorMap->bind();
     lineShader->use();
     lineShader->setMat4("proj", mat_2d * screenToNDC);
+
+    // draw lines
+    latlonLines->bind();
+    glDrawArrays(GL_LINES, 0, latlonLines->vCount);
+
+    // draw mercator map
+    mercatorMap->bind();
     glDrawArrays(GL_LINES, 0, mercatorMap->vCount);
+
+    /*glm::vec3 stapos = geoToMercatorCentered(g_sta.geo, scale_2d, offx, offy);
+    DrawShape(stashape, stapos, 2.5, C_GREEN);*/
+
 
     // draw text UI
     legacy_gl_ui(width, height, deltaTime, compstats.computeTime, mode, compstats.timeNow, g_sta, g_shownSats, selsatidx);
@@ -305,7 +315,33 @@ void startGraphics(std::vector<std::vector<sat>::iterator>& shownSats, station& 
         }
 
     mercatorMap = new VAO(VA_XYZRGB);
-    mercatorMap->set((float*)geoVertices, sizeof(xyzrgb_t) * (verIdx + 1));
+    mercatorMap->set((float*)geoVertices, sizeof(xyzrgb_t) * verIdx);
+
+
+    // make parallels and meridians
+    xyzrgb_t latlonVertices[52];
+    verIdx = 0;
+
+    for (float a = -180; a <= 180; a += 20) {
+        latlonVertices[verIdx].pos =     geoToMercatorCentered({a, -80.0f}, 1.0f, 0.0f, 0.0f);
+        latlonVertices[verIdx + 1].pos = geoToMercatorCentered({a, 80.0f}, 1.0f, 0.0f, 0.0f);
+        latlonVertices[verIdx].rgb = glm::vec3(GLC_BLUE);
+        latlonVertices[verIdx + 1].rgb = glm::vec3(GLC_BLUE);
+	    verIdx += 2;
+    }
+    for (float a = -80; a <= 80; a += 20) {
+        latlonVertices[verIdx].pos =     geoToMercatorCentered({-180.0f, a}, 1.0f, 0.0f, 0.0f);
+        latlonVertices[verIdx + 1].pos = geoToMercatorCentered({180.0f, a}, 1.0f, 0.0f, 0.0f);
+        latlonVertices[verIdx].rgb = glm::vec3(GLC_BLUE);
+        latlonVertices[verIdx + 1].rgb = glm::vec3(GLC_BLUE);
+	    verIdx += 2;
+    }
+
+    latlonLines = new VAO(VA_XYZRGB);
+    latlonLines->set((float*)latlonVertices, sizeof(xyzrgb_t) * verIdx);
+
+
+    // make sta shape
 
     // initialize text renderer
     textRendererInit("../representation/shaders/text.vs", "../representation/shaders/text.fs", "../assets/charstrip.bmp", 9, 15, &width, &height);
