@@ -1,16 +1,21 @@
-# arftracksat: A (no longer CLI only) satellite tracking software for linux
+# arftracksat: A graphical satellite tracking software for linux
+
 SGDP-4 adaptation shamelessly copied from BatchDrake's suscan.
 
 ![arftracksat](https://user-images.githubusercontent.com/35542215/187993716-356f1ce6-88f8-4734-b260-4ac9b984f914.PNG)
 
 ## Building
-Install dependencies
-```
+
+Install dependencies:
+
+```shell
 sudo apt update
 sudo apt install nlohmann-json3-dev libcurl4-openssl-dev libcurlpp-dev libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev libglm-dev
 ```
-Build
-```
+
+Build:
+
+```shell
 git clone https://github.com/arf20/arftracksat
 cd arftracksat/
 mkdir build
@@ -19,17 +24,23 @@ cmake ..
 make
 sudo make install # omit this if only building for development
 ```
-You may add -j<CPUs> to the make command to build faster.
+
+You may add `-j <CPUs>` to the `make` command to build faster.
 
 ## Running
-Without installing, for development
+
+Without installing, for development:
+
 ```
 ./arftracksat
 ```
+
 After installing, just run `arftracksat` anywhere.
 
 ## Configuring
-The default config.json located at /usr/local/etc/arftracksat/ after install should work out of the box
+
+The default `config.json` located at `/usr/local/etc/arftracksat/` after install should work out of the box.
+
 ```
 Value           Description
 tleroot:        Location to get and load TLE files, must be writable by the user,
@@ -46,11 +57,9 @@ show:           Array to only show sats by name. Leave empty to show all (possib
 columns:        Sat data to show in columns in order
                 name, azel, dis, geo, tab, pos, vel
 ```
-
-## Troubleshooting
-If arftracksat fails with "No sats", the TLE file contains no TLEs. Likely the TLE server (i.e. celestrack) returned a redirect or something.
   
 ## Controls
+
 ```
 General
   1-9:    Select satelite by number
@@ -65,20 +74,24 @@ General
 ```
 
 ## Troubleshooting
-If no sats are found in the TLE, celestrack (or similar) probably returned no TLEs but rather a redirect or something like that instead.
+
+- If arftracksat fails with "No sats", the TLE file contains no TLEs. Likely the TLE server (i.e. celestrack) returned a redirect or something.
+- If no sats are found in the TLE, celestrack (or similar) probably returned no TLEs but rather a redirect or something like that instead.
 
 ## Assets
-The cylindrical earth texture is world.topo.bathy.200412.3x5400x2700 from NASA's https://visibleearth.nasa.gov/images/73909/december-blue-marble-next-generation-w-topography-and-bathymetry
 
-# Further development
-Working on converting this to modern GL (GLFW/OpenGL 3.3) (branch feature/moderngl),
-and making a nice Qt GUI for it (branch qt),
-and maybe even at some point I could make a SigDigger and/or SDR++ plugin (branch plugin)
+The cylindrical earth texture is `world.topo.bathy.200412.3x5400x2700` from NASA's <https://visibleearth.nasa.gov/images/73909/december-blue-marble-next-generation-w-topography-and-bathymetry>.
 
-# Where Windows?
-I just broke support lol
+## Further development
 
-Old VS project in my personal repos: https://arf20.com/source/arftracksat (it sucks)
+Working on converting this to modern GL (GLFW/OpenGL 3.3) (branch feature/moderngl), and making a nice Qt GUI for it (branch qt), and maybe even at some point I could make a SigDigger and/or SDR++ plugin (branch plugin).
 
-# Support & help
-https://discord.gg/GpgrnDQqtr
+## Where Windows?
+
+I just broke support lol.
+
+Old VS project in my personal repos: <https://arf20.com/source/arftracksat> (it sucks).
+
+## Support & help
+
+<https://discord.gg/GpgrnDQqtr>
