@@ -2,7 +2,7 @@
   description = "A graphical satellite tracking software for linux";
 
   inputs = {
-    nixpkgs.url = github:nixos/nixpkgs/nixos-unstable;
+    nixpkgs.url = github:nixos/nixpkgs/nixos-24.05;
     flake-utils.url = github:numtide/flake-utils;
   };
 
