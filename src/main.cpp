@@ -108,6 +108,7 @@ void getTLEs(std::string root, std::vector<std::string> urls) {
 			request.setOpt<curlpp::Options::Url>(source);
 			curlpp::options::WriteStream ws(&tlef);
 			request.setOpt(ws);
+            request.setOpt<curlpp::Options::FollowLocation>(true);
 			request.perform();
 			i++;
 		}
