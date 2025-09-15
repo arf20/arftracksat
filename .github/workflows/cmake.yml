@@ -36,7 +36,7 @@ jobs:
         ./makedeb.sh 0.9-1
       
     - name: Upload deb package artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: arftracksat_0.9-1.deb
         path: arftracksat_0.9-1.deb
