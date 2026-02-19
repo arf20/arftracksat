@@ -1,7 +1,15 @@
 #include "graphics.hpp"
 
+#ifdef __APPLE__
+#include <GLUT/glut.h>
+#else
 #include <GL/freeglut.h>
+#endif
+#ifdef __APPLE__
+#include <OpenGL/gl.h>
+#else
 #include <GL/gl.h>
+#endif
 
 #include "../common/types-defs.hpp"
 #include "../common/sgdp4/sgdp4.h"
@@ -337,9 +345,15 @@ void startGraphics(std::vector<std::vector<sat>::iterator>& shownSats, station& 
     int argc = 0;
     char **argv = NULL;
     glutInit(&argc, argv);
+    unsigned int display_mode = GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH;
+#ifndef __APPLE__
     glutSetOption(GLUT_MULTISAMPLE, 4); // MSAA
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | GLUT_MULTISAMPLE);
+    display_mode |= GLUT_MULTISAMPLE;
+#endif
+    glutInitDisplayMode(display_mode);
+#ifndef __APPLE__
     glutInitContextVersion(3, 0);
+#endif
     glutInitWindowSize(640, 480);
     glutCreateWindow("arftracksat graphic");
 
