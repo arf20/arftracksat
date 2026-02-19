@@ -15,9 +15,6 @@
 
 
 #include <curl/curl.h>
-#include <curlpp/cURLpp.hpp>
-#include <curlpp/Easy.hpp>
-#include <curlpp/Options.hpp>
 
 #include <nlohmann/json.hpp>
 using namespace nlohmann;
@@ -95,28 +92,40 @@ bool checkTLE() {
 	return true;
 }
 
+size_t write_cb(void *ptr, size_t size, size_t nmemb, void *stream) {
+	return fwrite(ptr, size, nmemb, (FILE *)stream);
+}
+
+
 void getTLEs(std::string root, std::vector<std::string> urls) {
-	curlpp::Cleanup cleanup;
-	curlpp::Easy request;
+	if (curl_global_init(CURL_GLOBAL_ALL) != CURLE_OK) {
+		fprintf(stderr, "curl: could not init curl\n");
+		return;
+	}
 
 	int i = 0;
 	for (std::string& source : urls) {
-		std::ofstream tlef(root + source.substr(source.find_last_of("/\\") + 1), std::ios::binary | std::ios::out);
+		CURL *curl = curl_easy_init();
+		FILE *tlef = fopen((root + source.substr(source.find_last_of("/\\") + 1)).c_str(), "w");
+		if (!tlef)
+			fprintf(stderr, "could not open TLE file\n");
 
-		try {
-			std::cout << "Get:" << i << " " << source << std::endl;
-			request.setOpt<curlpp::Options::Url>(source);
-			curlpp::options::WriteStream ws(&tlef);
-			request.setOpt(ws);
-            request.setOpt<curlpp::Options::FollowLocation>(true);
-			request.perform();
-			i++;
-		}
-		catch (curlpp::RuntimeError e) { std::cout << e.what() << std::endl; }
-		catch (curlpp::LogicError e) { std::cout << e.what() << std::endl; }
+		std::cout << "Get:" << i << " " << source << std::endl;
+		curl_easy_setopt(curl, CURLOPT_URL, source.c_str());
+		curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
+		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_cb);
+		curl_easy_setopt(curl, CURLOPT_WRITEDATA, tlef);
+		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, CURLFOLLOW_ALL);
 
-		tlef.close();
+		if (curl_easy_perform(curl) != CURLE_OK)
+			fprintf(stderr, "curl: error performing request");
+
+		i++;
+
+		fclose(tlef);
+		curl_easy_cleanup(curl);
 	}
+	curl_global_cleanup();
 }
 
 int main(int argc, char **argv) {

@@ -3,6 +3,12 @@ project(arftracksat VERSION 0.1.0)
 
 set(CMAKE_CXX_STANDARD 17)
 
+find_package(OpenGL REQUIRED)
+find_package(GLUT REQUIRED)
+find_package(CURL REQUIRED)
+find_package(nlohmann_json REQUIRED)
+find_package(Threads REQUIRED)
+
 include_directories(common/sgdp4/ common/sgdp4/sigutils/ common/sgdp4/sigutils/util/)
 
 file (GLOB SGPD4_SRC
@@ -23,9 +29,9 @@ set(CMAKE_DEFAULT_PROJECT_FILE main.cpp)
 add_executable(arftracksat ${SOURCE_FILES})
 
 if(APPLE)
-    target_link_libraries(arftracksat pthread curl curlpp dl "-framework OpenGL" "-framework GLUT")
+    target_link_libraries(arftracksat PRIVATE Threads::Threads CURL::libcurl ${CMAKE_DL_LIBS} "-framework OpenGL" "-framework GLUT")
 else()
-    target_link_libraries(arftracksat pthread curl curlpp dl GL GLU glut)
+    target_link_libraries(arftracksat PRIVATE Threads::Threads CURL::libcurl nlohmann_json::nlohmann_json ${CMAKE_DL_LIBS} OpenGL::GL OpenGL::GLU GLUT::GLUT)
 endif()
 
 install(TARGETS arftracksat RUNTIME DESTINATION bin)
