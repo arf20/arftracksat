@@ -14,17 +14,18 @@
       arftracksat = (with pkgs; stdenv.mkDerivation {
           name = "arftracksat";
           src = ./.;
-          nativeBuildInputs = [ 
+          nativeBuildInputs = [
             cmake
-            mesa
+          ];
+          buildInputs = [
             curl
             curlpp
             nlohmann_json
             freeglut
-            libGL
-            mesa_glu
             glm
-            tree
+          ] ++ lib.optionals stdenv.hostPlatform.isLinux [
+            libGL
+            libGLU
           ];
           # Patch share location
           postUnpack = ''
