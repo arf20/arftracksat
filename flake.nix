@@ -29,12 +29,12 @@
               curl
               curlpp
               nlohmann_json
-              freeglut
               glm
             ])
             ++ (
               with pkgs;
               lib.optionals stdenv.hostPlatform.isLinux [
+                freeglut
                 libGL
                 libGLU
               ]

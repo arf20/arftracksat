@@ -8,7 +8,11 @@ using namespace nlohmann;
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#ifdef __APPLE__
+#include <GLUT/glut.h>
+#else
 #include <GL/freeglut.h>
+#endif
 
 #include <vector>
 #include <iostream>
