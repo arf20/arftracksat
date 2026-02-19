@@ -39,16 +39,6 @@
             substituteInPlace src/main.cpp --replace-fail '/usr/local' "$out"
             substituteInPlace config.json --replace-fail '/usr/local' "$out"
           '';
-
-          buildPhase = "make -j $NIX_BUILD_CORES";
-
-          installPhase = ''
-            mkdir -p $out/bin $out/etc/arftracksat $out/share/arftracksat
-            mv arftracksat $out/bin
-            cd ..
-            mv config.json $out/etc/arftracksat/config.json
-            mv assets/earth.png assets/map.json $out/share/arftracksat
-          '';
         };
       in {
         packages.default = arftracksat;
