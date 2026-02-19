@@ -13,26 +13,27 @@
           inherit system;
         };
 
-        arftracksat = with pkgs; stdenv.mkDerivation {
+        arftracksat = pkgs.stdenv.mkDerivation {
           pname = "arftracksat";
           version = "unstable";
           src = ./.;
 
-          nativeBuildInputs = [
+          nativeBuildInputs = with pkgs; [
             cmake
           ];
 
-          buildInputs = [
-            curl
-            curlpp
-            nlohmann_json
-            freeglut
-            glm
-          ]
-          ++ lib.optionals stdenv.hostPlatform.isLinux [
-            libGL
-            libGLU
-          ];
+          buildInputs =
+            (with pkgs; [
+              curl
+              curlpp
+              nlohmann_json
+              freeglut
+              glm
+            ])
+            ++ (with pkgs; lib.optionals stdenv.hostPlatform.isLinux [
+              libGL
+              libGLU
+            ]);
 
           # Patch share location
           postPatch = ''
