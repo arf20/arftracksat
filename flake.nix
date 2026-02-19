@@ -35,10 +35,9 @@
           ];
 
           # Patch share location
-          postUnpack = ''
-            path=${placeholder "out"}
-            sed -i "s,/usr/local,$path," *-source/src/main.cpp
-            sed -i "s,/usr/local,$path," *-source/config.json
+          postPatch = ''
+            substituteInPlace src/main.cpp --replace-fail '/usr/local' "$out"
+            substituteInPlace config.json --replace-fail '/usr/local' "$out"
           '';
 
           buildPhase = "make -j $NIX_BUILD_CORES";
