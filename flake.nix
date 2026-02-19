@@ -6,8 +6,10 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { nixpkgs, flake-utils, ... }:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs =
+    { nixpkgs, flake-utils, ... }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
       let
         pkgs = import nixpkgs {
           inherit system;
@@ -30,10 +32,13 @@
               freeglut
               glm
             ])
-            ++ (with pkgs; lib.optionals stdenv.hostPlatform.isLinux [
-              libGL
-              libGLU
-            ]);
+            ++ (
+              with pkgs;
+              lib.optionals stdenv.hostPlatform.isLinux [
+                libGL
+                libGLU
+              ]
+            );
 
           # Patch share location
           postPatch = ''
@@ -41,12 +46,15 @@
             substituteInPlace config.json --replace-fail '/usr/local' "$out"
           '';
         };
-      in {
+      in
+      {
         packages.default = arftracksat;
 
         apps.default = flake-utils.lib.mkApp {
           drv = arftracksat;
         };
+
+        formatter = pkgs.nixfmt-tree;
 
         devShells.default = pkgs.mkShell {
           inputsFrom = [ arftracksat ];
