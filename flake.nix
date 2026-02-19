@@ -12,9 +12,8 @@
         pkgs = import nixpkgs {
           inherit system;
         };
-      in
-      rec {
-        packages.default = with pkgs; stdenv.mkDerivation {
+
+        arftracksat = with pkgs; stdenv.mkDerivation {
           pname = "arftracksat";
           version = "unstable";
           src = ./.;
@@ -52,13 +51,15 @@
             mv assets/earth.png assets/map.json $out/share/arftracksat
           '';
         };
+      in {
+        packages.default = arftracksat;
 
         apps.default = flake-utils.lib.mkApp {
-          drv = packages.default;
+          drv = arftracksat;
         };
 
         devShells.default = pkgs.mkShell {
-          inputsFrom = [ packages.default ];
+          inputsFrom = [ arftracksat ];
         };
       }
     );
