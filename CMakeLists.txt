@@ -22,7 +22,12 @@ set(CMAKE_DEFAULT_PROJECT_FILE main.cpp)
 
 add_executable(arftracksat ${SOURCE_FILES})
 
-target_link_libraries(arftracksat pthread curl curlpp dl GL GLU glut)
+if(APPLE)
+    target_link_libraries(arftracksat pthread curl curlpp dl glut)
+    target_link_options(arftracksat PRIVATE -framework OpenGL)
+else()
+    target_link_libraries(arftracksat pthread curl curlpp dl GL GLU glut)
+endif()
 
 install(TARGETS arftracksat RUNTIME DESTINATION bin)
 install(FILES ${CONFJSON} DESTINATION etc/arftracksat/)

@@ -1,7 +1,11 @@
 #include "graphics.hpp"
 
 #include <GL/freeglut.h>
+#ifdef __APPLE__
+#include <OpenGL/gl.h>
+#else
 #include <GL/gl.h>
+#endif
 
 #include "../common/types-defs.hpp"
 #include "../common/sgdp4/sgdp4.h"
