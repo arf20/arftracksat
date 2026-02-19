@@ -1,39 +1,49 @@
 {
-  description = "A graphical satellite tracking software for linux";
+  description = "A graphical satellite tracking software";
 
   inputs = {
-    nixpkgs.url = github:nixos/nixpkgs/nixos-25.11;
-    flake-utils.url = github:numtide/flake-utils;
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
+    flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = {self, nixpkgs, flake-utils, ...}@inputs: flake-utils.lib.eachDefaultSystem (system:
-    let 
-      pkgs = import nixpkgs {
-        inherit system;
-      };
-      arftracksat = (with pkgs; stdenv.mkDerivation {
-          name = "arftracksat";
+  outputs = { nixpkgs, flake-utils, ... }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        pkgs = import nixpkgs {
+          inherit system;
+        };
+      in
+      rec {
+        packages.default = with pkgs; stdenv.mkDerivation {
+          pname = "arftracksat";
+          version = "unstable";
           src = ./.;
+
           nativeBuildInputs = [
             cmake
           ];
+
           buildInputs = [
             curl
             curlpp
             nlohmann_json
             freeglut
             glm
-          ] ++ lib.optionals stdenv.hostPlatform.isLinux [
+          ]
+          ++ lib.optionals stdenv.hostPlatform.isLinux [
             libGL
             libGLU
           ];
+
           # Patch share location
           postUnpack = ''
             path=${placeholder "out"}
             sed -i "s,/usr/local,$path," *-source/src/main.cpp
             sed -i "s,/usr/local,$path," *-source/config.json
           '';
+
           buildPhase = "make -j $NIX_BUILD_CORES";
+
           installPhase = ''
             mkdir -p $out/bin $out/etc/arftracksat $out/share/arftracksat
             mv arftracksat $out/bin
@@ -41,18 +51,15 @@
             mv config.json $out/etc/arftracksat/config.json
             mv assets/earth.png assets/map.json $out/share/arftracksat
           '';
-        }
-      );
-    in rec {
-      defaultApp = flake-utils.lib.mkApp {
-        drv = defaultPackage;
-      };
-      defaultPackage = arftracksat;
-      devShell = pkgs.mkShell {
-        buildInputs = [
-          arftracksat
-        ];
-      };
-    }
-  );
+        };
+
+        apps.default = flake-utils.lib.mkApp {
+          drv = packages.default;
+        };
+
+        devShells.default = pkgs.mkShell {
+          inputsFrom = [ packages.default ];
+        };
+      }
+    );
 }
