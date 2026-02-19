@@ -115,7 +115,7 @@ void getTLEs(std::string root, std::vector<std::string> urls) {
 		curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_cb);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, tlef);
-		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, CURLFOLLOW_ALL);
+		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 
 		if (curl_easy_perform(curl) != CURLE_OK)
 			fprintf(stderr, "curl: error performing request");
